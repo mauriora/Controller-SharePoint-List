@@ -4,7 +4,7 @@
     "environment": "spo",
     "whichFolder": "subdir",
     "version": "1.11.0",
-    "libraryName": "@fusion5/controller-sharepoint-list",
+    "libraryName": "@mauriora/controller-sharepoint-list",
     "libraryId": "71abd4be-7fdd-4e95-81f6-e07b4266dc79",
     "packageManager": "yarn",
     "isDomainIsolated": false,
