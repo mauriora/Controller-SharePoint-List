@@ -13,6 +13,7 @@ export {
 } from './controller/SharePoint/Model';
 export {
     getSiteSync, 
+    getCurrentUser,
     init
 } from './controller/SharePoint/Site';
 export {
