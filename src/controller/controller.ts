@@ -15,7 +15,7 @@ export interface Controller<ControllerType extends DataBase, DataType extends Co
     getById: (id: number) => Promise<DataType>;
     getNew: () => Promise<ControllerType>;
 
-    addGetPartial<T extends Partial<DataType> & ControllerType>(item: T): T;
+    addGetPartial<T extends Partial<DataType> & ControllerType>(item: T): Promise<T>;
 }
 
 export interface Model<ControllerType extends DataBase, DataType extends ControllerType> {

@@ -350,7 +350,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
      * otherwise use this one. 
      * Used to "resolve" intiaially created ChildItems 
      **/
-    public addGetPartial<T extends Partial<DataType> & ListItemBase>(item: T): T {
+    public async addGetPartial<T extends Partial<DataType> & ListItemBase>(item: T): Promise<T> {
         const existing = this.getPartial(item.id);
         if (existing) {
             return existing as T;
@@ -363,7 +363,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
 
         this.partialItems.push(item);
         if (this.autoLoadPartials) {
-            this.loadAndShiftPartials();
+            await this.loadAndShiftPartials();
         }
         return item;
     }
@@ -586,7 +586,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
 
         setNullArrays(instance, this.propertyFields);
         if (plain) {
-            this.connectLookUp(instance);
+            await this.connectLookUp(instance);
             await fixSingleTaxonomyFields(instance, this.propertyFields);
         }
         if (instance.setController) {
@@ -607,7 +607,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
         return instance;
     }
 
-    private connectLookUp = (item: DataType) => {
+    private connectLookUp = async (item: DataType) => {
         for (const [property, mappingInfo] of this.lookupMappings) {
             const tempLookup = item[property];
             if (undefined !== tempLookup) {
@@ -624,12 +624,14 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
                 } else {
                     const isArray = Array.isArray(tempLookup);
                     const lookupController = getById(mappingInfo.listId) as SharePointList;
+                    const lookupItems = isArray ? tempLookup : [tempLookup];
 
-                    (isArray ? tempLookup : [tempLookup]).forEach((lookup, index) => {
+                    for(let index=0; index < lookupItems.length; index++) {
+                        const lookup = lookupItems[index];
                         if (undefined === lookup.id) {
                             throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp(${item?.id}).${property} no Id`);
                         } else {
-                            const lookupItem = lookupController.addGetPartial(lookup);
+                            const lookupItem = await lookupController.addGetPartial(lookup);
 
                             if (undefined === lookupItem) {
                                 throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp(${item?.id}) .${property}[${lookup.id}] problem addGetPartial`);
@@ -641,7 +643,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
                                 }
                             }
                         }
-                    });
+                    }
                 }
             }
         }
