@@ -1,5 +1,5 @@
 import { Exclude } from "class-transformer";
-import { makeObservable, observable } from "mobx";
+import { IObjectDidChange, makeObservable, observable, observe } from "mobx";
 import { Controller } from "../controller/controller";
 
 export interface InitOpions {
@@ -14,6 +14,9 @@ export interface IDataBase {
     init: (options?: InitOpions) => this;
 
     source: unknown;
+
+    /** If true the item has been modified and not submitted yet*/
+    dirty: boolean;
 }
 
 
@@ -26,6 +29,10 @@ export class DataBase implements IDataBase {
     @Exclude()
     public source: unknown = undefined;
 
+    /** If true the item has been modified and not submitted yet*/
+    @Exclude()
+    public dirty: boolean = false;
+
     public constructor() {
     }
 
@@ -37,6 +44,16 @@ export class DataBase implements IDataBase {
         }
 
         return fullOptions;
+    }
+
+    private onChange = (change: IObjectDidChange) => {
+        if(change.name !== 'dirty' && ! this.dirty) {
+            console.log(`DataBase[${this.constructor.name}].onChange(${String(change.name)}) set dirty`);
+            this.dirty = true;
+        }
+        if(change.name === 'dirty' && ! this.dirty) {
+            console.log(`DataBase[${this.constructor.name}].onChange (not dirty)`);
+        }
     }
 
     @Exclude()
@@ -67,9 +84,11 @@ export class DataBase implements IDataBase {
             }
             console.debug(`DataBase[${this.constructor.name}].init() makeObservable`, { observableProperties, options, meNow: { ...this }, me: this });
             makeObservable(this, observableProperties);
+            observe( this, this.onChange);
         }
         return this;
     }
+
 }
 
 export interface DataBaseConstructor<DataType extends DataBase = DataBase> {

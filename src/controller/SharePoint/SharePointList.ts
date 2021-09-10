@@ -126,6 +126,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
             }
             console.log(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].submit() add response=${newID}`, { jsRecord, submitRecord, createResponse });
         }
+        jsRecord.dirty = false;
     }
 
 
