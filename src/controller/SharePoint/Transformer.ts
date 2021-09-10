@@ -5,37 +5,38 @@ import { ListItem } from "../../models/ListItem";
 import { ListItemBase } from "../../models/ListItemBase";
 import { MetaTerm, MetaTermSP } from "../../models/MetaTerm";
 import { addTerm } from "../Taxonomy";
+import { allowsMultipleValues, getTermSetId, isKeyword } from "./FieldInfo";
 
 export const resultArrayToArray = (plain: Record<string, any>, selectedFields: Map<string, IFieldInfo>) => {
     for (const [fieldName, info] of selectedFields.entries()) {
-        if (true === info['AllowMultipleValues'] && plain[fieldName]?.['results']) {
+        if ( allowsMultipleValues(info) && plain[fieldName]?.['results']) {
             plain[fieldName] = plain[fieldName]['results'];
         }
     }
 }
 
-export const setNullArrays = (item: ListItemBase, propertyFields: Map<string, IFieldInfo>) => {
+export const setNullArrays = <ItemType extends ListItemBase>(item: ItemType, propertyFields: Map<keyof ItemType, IFieldInfo>) => {
     for (const [propertyName, info] of propertyFields) {
-        if (true === info['AllowMultipleValues'] || info.FieldTypeKind === FieldTypes.MultiChoice) {
-            if (!item[propertyName] || undefined !== item.source?.[info.InternalName]?.['__deferred']) {
-                if (undefined !== item.source?.[info.InternalName]?.['__deferred']) {
+        if (allowsMultipleValues(info) || info.FieldTypeKind === FieldTypes.MultiChoice) {
+            if (!item[propertyName] || undefined !== (item.source as any)?.[info.InternalName]?.['__deferred']) {
+                if (undefined !== (item.source as any)?.[info.InternalName]?.['__deferred']) {
                     console.warn(`setNullArrays .${propertyName} don't know what to do with deferred, set ${propertyName}=empty array !!`, { item, propertyName });
                 }
-                item[propertyName] = new Array();
+                item[propertyName] = new Array() as any;
             }
         }
     }
 }
 
 
-export const fixSingleTaxonomyFields = (item: ListItemBase, propertyFields: Map<string, IFieldInfo>) => {
+export const fixSingleTaxonomyFields = <ItemType extends ListItemBase>(item: ItemType, propertyFields: Map<keyof ItemType, IFieldInfo>) => {
     for (const [propertyName, field] of propertyFields.entries()) {
         if (FieldTypes.Invalid === field.FieldTypeKind && 'TaxonomyFieldType' === field.TypeAsString) {
-            const metaTerm = (item[propertyName] as MetaTerm);
+            const metaTerm = (item[propertyName] as unknown as MetaTerm);
             if (metaTerm) {
-                if ((item as ListItem).taxCatchAll) {
+                if ((item as unknown as ListItem).taxCatchAll) {
                     const id = Number.parseInt(metaTerm.label);
-                    const catchAll = (item as ListItem).taxCatchAll.find(prospect => id === prospect.id);
+                    const catchAll = (item as unknown as ListItem).taxCatchAll.find(prospect => id === prospect.id);
                     metaTerm.label = catchAll.term;
                 } else {
                     console.error(`[${item.id}].fixSingleTaxonomyFields ${propertyName} ${metaTerm?.label} no catchAll`, { metaTerm, item });
@@ -55,7 +56,7 @@ const toTermStringSP = (terms: Array<MetaTermSP>): string =>
 
 /** Returns the fieldname for a multi metadata field, required to update the item. */
 const getHiddenMetadataField = (normalName: string, allFields: Map<string, IFieldInfo>, fieldInfo?: IFieldInfo): string => {
-    if (fieldInfo && true === fieldInfo['IsKeyword']) {
+    if (fieldInfo && isKeyword( fieldInfo) ) {
         return 'TaxKeywordTaxHTField';
     }
     const hiddenFieldTitle = normalName + '_0';
@@ -77,7 +78,7 @@ const toTaxonomyFieldTypeMulti = async (submitRecord: Record<string, any>, prope
 
         for (const term of terms) {
             if (EmptyGuid === term.TermGuid) {
-                await addTerm(fieldInfo['TermSetId'], term);
+                await addTerm( getTermSetId( fieldInfo ), term);
             }
         }
         const termsString = toTermStringSP(terms);
@@ -126,7 +127,7 @@ export const toSubmit = async (jsRecord: ListItemBase, selectedFields: Map<strin
             if ('ID' !== fieldInfo.InternalName && fieldInfo.ReadOnlyField) {
                 console.warn(`[${jsRecord.id}].toSubmit() ignore readOnly field ${propertyName}`, { jsRecord });
             } else {
-                const multiValue = true === fieldInfo['AllowMultipleValues'];
+                const multiValue = allowsMultipleValues(fieldInfo);
 
                 switch (fieldInfo.FieldTypeKind) {
                     case FieldTypes.Invalid:

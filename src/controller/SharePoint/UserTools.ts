@@ -1,7 +1,7 @@
 import { IFieldInfo } from "@pnp/sp/fields";
 import { UserLookup } from "../../models/User";
 import { getById, SharePointList } from "./SharePointList";
-
+import { getLookupList } from './FieldInfo';
 /**
  * 
  * @param person IPersonaProps
@@ -9,12 +9,12 @@ import { getById, SharePointList } from "./SharePointList";
  * @returns 
  */
  export const personaProps2User = async (person: { id: string, loginName: string }, info: IFieldInfo): Promise<UserLookup> => {
-    const lookUpListId = info['LookupList'];
+    const lookUpListId = getLookupList( info );
 
-    if (undefined === lookUpListId) {
+    if (! lookUpListId) {
         throw new Error(`SharePointList personaProps2User no LookupListID`);
     } else {
-        const controller = getById(lookUpListId) as SharePointList<UserLookup>;
+        const controller = getById(lookUpListId) as unknown as SharePointList<UserLookup>;
         let user: UserLookup = undefined;
         let userId: number = /^\d+$/.test(person.id) ? Number(person.id) : undefined;
 

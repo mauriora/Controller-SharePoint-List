@@ -62,7 +62,7 @@ const createIsolatedSpRest = async (siteUrl: string): Promise<SPRest> => {
             }
         });
         return isolatedSp;
-    } catch (createSpRestError) {
+    } catch( createSpRestError: any ) {
         throw new Error(`controller/createIsolatedSpRest: problem creating isolated SPRest for ${siteUrl}=>${normalisedSiteUrl}: [${createSpRestError?.status}] ${createSpRestError.message ?? createSpRestError}`);
     }
 }

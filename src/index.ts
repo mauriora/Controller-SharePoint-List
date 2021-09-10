@@ -2,12 +2,13 @@ export {
     Controller, Model
 } from './controller/controller';
 export {
-    IFieldInfo,
     getLists,
     create,
     getById,
     SharePointList
 } from './controller/SharePoint/SharePointList';
+export * from './controller/SharePoint/FieldInfo';
+export * from './models/WriteableParts'
 export {
     SharePointModel
 } from './controller/SharePoint/Model';

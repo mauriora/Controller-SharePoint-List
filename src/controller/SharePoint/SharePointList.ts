@@ -1,5 +1,7 @@
+// causes webpack to fail -> import { defaultMetadataStorage } from 'class-transformer/types/storage';
+// declared in ./MetadataStorage.d.ts
 import { defaultMetadataStorage } from 'class-transformer/esm5/storage';
-// import { defaultMetadataStorage } from 'class-transformer/types/storage';
+
 // import { FieldTypes, IFieldInfo } from "@pnp/sp/fields";
 // import { IList, IListInfo } from "@pnp/sp/lists";
 import { IFieldInfo, IList, IListInfo, FieldTypes } from '@pnp/sp/presets/all';
@@ -13,8 +15,7 @@ import { fixSingleTaxonomyFields, resultArrayToArray, setNullArrays, toSubmit } 
 import { plainToClass, plainToClassFromExist } from 'class-transformer';
 import { ODataError } from '../../models/OData/Error';
 import { DataError } from '../../models/DataError';
-// export { IFieldInfo } from "@pnp/sp/fields";
-export { IFieldInfo } from '@pnp/sp/presets/all';
+import { allowsMultipleValues, getLookupList } from './FieldInfo';
 
 const TAX_CATCH_ALL_FIELD = 'TaxCatchAll';
 
@@ -86,7 +87,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
         if (undefined !== local) return local;
 
         try {
-            const plain = this.getPlainById(id);
+            const plain = await this.getPlainById(id);
 
             const instance = await this.getObject(plain);
             this.records.push(instance);
@@ -94,7 +95,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
             console.debug(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].gotById(${id}) records=${this.records.length}`, { instance, plain, records: [... this.records], selects: this.selectFields, expands: this.expandFields });
 
             return instance;
-        } catch (getItemsError) {
+        } catch (getItemsError: any) {
             throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].getById(${id}) failed: ${getItemsError.message ?? getItemsError}`);
         }
     }
@@ -105,7 +106,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
      * !! If this.newRecord is submitted, then it will be replaced with a new instance. !!
      * @param jsRecord is .id is undefined or <0, then a new item is created, filled with the returned list item values (id, default values, ...)
      */
-    public submit = async (jsRecord?: DataType): Promise<string | void> => {
+    public submit = async (jsRecord?: DataType): Promise<void> => {
         jsRecord = jsRecord ?? this.newRecord;
 
         const submitRecord = await toSubmit(jsRecord, this.selectedFields, this.allFields);
@@ -182,7 +183,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
             } else {
                 this.list = this.site.sp.web.lists.getByTitle(this.listTitle);
             }
-        } catch (getListError) {
+        } catch (getListError: any) {
             throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].init(): ${this.listId ? 'getById' : 'getByTitle'}: ${getListError.message ?? getListError}`);
         }
 
@@ -206,7 +207,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
             for (const info of fieldsInfos) {
                 this._allFields.set(info.InternalName, info);
             }
-        } catch (getFieldsError) {
+        } catch (getFieldsError: any) {
             throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].getFieldInfos() caught: ${getFieldsError.message ?? getFieldsError}`);
         }
     }
@@ -214,7 +215,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
     private getListInfo = async () => {
         try {
             this.listInfo = await this.list();
-        } catch (getListInfoError) {
+        } catch (getListInfoError: any) {
             throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].getListInfo(): getList ${getListInfoError.message ?? getListInfoError}`);
         }
     }
@@ -226,7 +227,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
         try {
             this.rootFolderProperties = await this.list.rootFolder.properties.get();
             this.votingExperience = this.rootFolderProperties['Ratings_x005f_VotingExperience'] as undefined | 'Ratings' | 'Likes';
-        } catch (getError) {
+        } catch (getError: any) {
             throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].getRootFolderProperties(): getList ${getError.message ?? getError}`);
         }
     }
@@ -244,7 +245,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
     private expandFields = new Set<string>();
 
     /** Propertyname mapped to Sharepoint fieldInfos */
-    private propertyFields = new Map<string, IFieldInfo>();
+    private propertyFields = new Map<keyof DataType, IFieldInfo>();
 
     private models = new Map<ListItemBaseConstructor, SharePointModel<DataType>>();
 
@@ -273,7 +274,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
     }
 
     async addModel<ModelType extends DataType>(jsFactory: ListItemBaseConstructor<ModelType>, filter: string): Promise<SharePointModel<ModelType>> {
-        const existing = this.models.get(jsFactory) as SharePointModel<ModelType>;
+        const existing = this.models.get(jsFactory) as unknown as SharePointModel<ModelType>;
 
         console.debug(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].addModel()`, { existing });
 
@@ -288,50 +289,56 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
             await this.addModelSelectAndExpand(newModel);
             await this.createRequiredChildController();
         }
-        return newModel as SharePointModel<ModelType>;
+        //TODO: Shouldn't this work without converting?
+        return newModel as unknown as SharePointModel<ModelType>;
     }
 
     /**
      * Maps propertyname to { Lookup list Id, loadLookupController, thisFieldName }
      */
-    private lookupMappings = new Map<string, LookupFieldMapping>();
+    private lookupMappings = new Map<keyof DataType, LookupFieldMapping>();
 
     private createRequiredChildController = async () => {
         for (const [property, info] of this.propertyFields.entries()) {
-            switch (info.FieldTypeKind) {
-                case FieldTypes.User:
-                case FieldTypes.Lookup:
-                    {
-                        const lookUpListId = info['LookupList'];
+            if ('string' === typeof (property)) {
+                switch (info.FieldTypeKind) {
+                    case FieldTypes.User:
+                    case FieldTypes.Lookup:
+                        {
+                            const lookUpListId = getLookupList(info);
 
-                        if (undefined === lookUpListId) {
-                            throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].createRequiredChildController no LookupList (ID) for ${property} of type ${info.TypeAsString}[${info.FieldTypeKind}]`);
-                        } else if (!this.lookupMappings.has(property)) {
-                            let lookupController = getById(lookUpListId, false);
+                            if (undefined === lookUpListId) {
+                                throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].createRequiredChildController no LookupList (ID) for ${property} of type ${info.TypeAsString}[${info.FieldTypeKind}]`);
+                            } else if (!this.lookupMappings.has(property)) {
+                                let lookupController = getById(lookUpListId, false);
 
-                            if (undefined === lookupController) {
-                                console.log(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].createRequiredChildController create LookupList[${lookUpListId}] for ${property}`, { info });
-                                lookupController = await getCreate(lookUpListId, this.site.url);
-                                lookupController.init();
-                            }
-                            this.lookupMappings.set(
-                                property,
-                                {
-                                    listId: lookUpListId,
-                                    loadLookupController: false,
-                                    thisFieldName: info.InternalName,
-                                    controller: lookupController
+                                if (undefined === lookupController) {
+                                    console.log(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].createRequiredChildController create LookupList[${lookUpListId}] for ${property}`, { info });
+                                    lookupController = await getCreate(lookUpListId, this.site.url);
+                                    lookupController.init();
                                 }
-                            );
+                                this.lookupMappings.set(
+                                    property,
+                                    {
+                                        listId: lookUpListId,
+                                        loadLookupController: false,
+                                        thisFieldName: info.InternalName,
+                                        controller: lookupController
+                                    }
+                                );
 
-                            // Add Lookup models of all registered models
-                            for (const model of this.models.values()) {
-                                this.addLookupModeltoController(model, property, lookupController);
+                                // Add Lookup models of all registered models
+                                for (const model of this.models.values()) {
+                                    this.addLookupModeltoController(model, property, lookupController);
+                                }
                             }
                         }
-                    }
-                    break;
+                        break;
+                }
+            } else {
+                throw new Error(`Can only have string members not ${typeof (property)}`)
             }
+
         }
     }
 
@@ -355,10 +362,10 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
         if (existing) {
             return existing as T;
         }
-        if('function' === typeof( item.setController )) {
-            item.setController(this);
+        if ('function' === typeof (item.setController)) {
+            item.setController(this as unknown as SharePointList);
         } else {
-            console.error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].addGetPartial item has no setController`, {item, controller: this})
+            console.error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].addGetPartial item has no setController`, { item, controller: this })
         }
 
         this.partialItems.push(item);
@@ -411,7 +418,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
 
     private static EXPANDED_FIELD_ERROR_500 = RegExp(/^Cannot get value for projected field ([A-z0-9_]+)_x005f_([A-z0-9_]+).$/);
 
-    private static isExpanededFieldError500 = (error): string | undefined => {
+    private static isExpanededFieldError500 = (error: any): string | undefined => {
 
         if (error.message && /error/.test(error.message)) {
             try {
@@ -427,7 +434,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
                 ) {
                     return errorMatches[1] + '/' + errorMatches[2];
                 }
-            } catch (parseErrorError) {
+            } catch (parseErrorError: any) {
                 throw new Error(`SharePointList.isExpanededFieldError500 JSON parse error: ${parseErrorError.message ?? parseErrorError}: parsing error: ${error?.message ?? error}`);
             }
         } else {
@@ -438,7 +445,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
 
     private static EXPANDED_FIELD_ERROR_400 = RegExp(/^The query to field '([A-z0-9_]+)\/([A-z0-9_]+)' is not valid.$/);
 
-    private static isExpanededFieldError400 = (error): string | undefined => {
+    private static isExpanededFieldError400 = (error: any): string | undefined => {
 
         // if(error.message && /\[500\]\s+::>\{"odata.error"/.test(error.message))  {
         if (error.message && /odata.error/.test(error.message)) {
@@ -453,7 +460,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
                 ) {
                     return errorMatches[1] + '/' + errorMatches[2];
                 }
-            } catch (parseErrorError) {
+            } catch (parseErrorError: any) {
                 throw new Error(`SharePointList.isExpanededFieldError400 JSON parse error: ${parseErrorError.message ?? parseErrorError}: parsing error: ${error?.message ?? error}`);
             }
         } else {
@@ -513,7 +520,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
                 this.records.push(instance);
             }
             console.debug(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].getAll gotInstances records=${this.records.length}`, { plainItems, records: [... this.records] });
-        } catch (getItemsError) {
+        } catch (getItemsError: any) {
             let failedExpandedField = undefined;
             switch (getItemsError['status']) {
                 case 404:
@@ -569,7 +576,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
      * If filled with values from plain, connectsLookup and fixes single Taxonom fields. 
      * Connect pnpItem, calls instance.init() and removes it from records when deleted
      */
-    private getObject = async (plain?, existing?: Partial<DataType> & ListItemBase): Promise<DataType> => {
+    private getObject = async (plain?: Record<string, unknown>, existing?: Partial<DataType> & ListItemBase): Promise<DataType> => {
         if (plain) {
             console.warn(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].getObject(${plain.ID}) resultArrayToArray`, { plainNow: { ...plain }, plain });
 
@@ -590,7 +597,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
             await fixSingleTaxonomyFields(instance, this.propertyFields);
         }
         if (instance.setController) {
-            instance.setController(this);
+            instance.setController(this as unknown as SharePointList);
         }
         if (instance.id) {
             if (instance.pnpItem) {
@@ -609,39 +616,41 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
 
     private connectLookUp = (item: DataType) => {
         for (const [property, mappingInfo] of this.lookupMappings) {
-            const tempLookup = item[property];
-            if (undefined !== tempLookup) {
-                if (undefined !== item.source[mappingInfo.thisFieldName]?.['__deferred'] && 'id' in tempLookup && undefined === tempLookup['id']) {
-                    console.warn(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp .${property}=${tempLookup} don't know what to do with deferred, set ${property}=undefined !!`, { item, property, tempLookup, mappingInfo });
-                    const fieldInfo = this.propertyFields.get(property);
+            if ('string' === typeof (property)) {
+                const tempLookup = item[property];
+                if (undefined !== tempLookup) {
+                    if (undefined !== (item.source as any)[mappingInfo.thisFieldName]?.['__deferred'] && 'id' in tempLookup && undefined === (tempLookup as any)['id']) {
+                        console.warn(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp .${property}=${tempLookup} don't know what to do with deferred, set ${property}=undefined !!`, { item, property, tempLookup, mappingInfo });
+                        const fieldInfo = this.propertyFields.get(property);
 
-                    if (true === fieldInfo['AllowMultipleValues']) {
-                        console.error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp .${property}=${tempLookup} don't know what to do with deferred, set ${property}=Array THIS SHOULD BE DONE BY setNullArrays !!`, { item, property, tempLookup, mappingInfo });
-                        item[property] = new Array();
-                    } else {
-                        item[property] = undefined;
-                    }
-                } else {
-                    const isArray = Array.isArray(tempLookup);
-                    const lookupController = getById(mappingInfo.listId) as SharePointList;
-
-                    (isArray ? tempLookup : [tempLookup]).forEach((lookup, index) => {
-                        if (undefined === lookup.id) {
-                            throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp(${item?.id}).${property} no Id`);
+                        if (allowsMultipleValues(fieldInfo)) {
+                            console.error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp .${property}=${tempLookup} don't know what to do with deferred, set ${property}=Array THIS SHOULD BE DONE BY setNullArrays !!`, { item, property, tempLookup, mappingInfo });
+                            item[property] = new Array() as any;
                         } else {
-                            const lookupItem = lookupController.addGetPartial(lookup);
+                            item[property] = undefined;
+                        }
+                    } else {
+                        const isArray = Array.isArray(tempLookup);
+                        const lookupController = getById(mappingInfo.listId) as SharePointList;
 
-                            if (undefined === lookupItem) {
-                                throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp(${item?.id}) .${property}[${lookup.id}] problem addGetPartial`);
+                        (isArray ? tempLookup as unknown as Array<any> : [tempLookup]).forEach((lookup, index) => {
+                            if (undefined === lookup.id) {
+                                throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp(${item?.id}).${property} no Id`);
                             } else {
-                                if (isArray) {
-                                    item[property][index] = lookupItem;
+                                const lookupItem = lookupController.addGetPartial(lookup);
+
+                                if (undefined === lookupItem) {
+                                    throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp(${item?.id}) .${property}[${lookup.id}] problem addGetPartial`);
                                 } else {
-                                    item[property] = lookupItem;
+                                    if (isArray) {
+                                        (item[property] as any)[index] = lookupItem;
+                                    } else {
+                                        item[property] = lookupItem;
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             }
         }
@@ -690,7 +699,7 @@ export const create = async (listId: string, siteUrl?: string): Promise<SharePoi
 
         controllers.set(url, newController);
         return newController;
-    } catch (initError) {
+    } catch (initError: any) {
         throw new Error(`SharePointList:create( ${url} ) failed: ${initError.message ?? initError}`);
     }
 };
@@ -725,7 +734,7 @@ export const getById = (listGuid: string, throwExceptionIfDoesntExist: boolean =
     const controller = Array.from(controllers.values()).find(prospect => (prospect.listId === listGuid));
 
     if (throwExceptionIfDoesntExist && (undefined === controller)) {
-        throw new Error(`SharePointList:get: Can't find controller for ${listGuid}.Got ${controllers.size} controllers: ${(Array.from(controllers.values())).map(item => item.listId).join(' ; ')}`);
+        throw new Error(`SharePointList:get: Can't find controller for ${listGuid}.Got ${controllers.size} controllers: ${(Array.from(controllers.values())).map(item => item.listId ?? item.listTitle).join('; ')}`);
     }
 
     return controller;
@@ -741,12 +750,12 @@ export const getCreate = async (listId: string, siteUrl?: string): Promise<Share
 }
 
 export const getUserLookupSync = (userId: number, info: IFieldInfo): UserLookup => {
-    const lookUpListId = info['LookupList'];
+    const lookUpListId = getLookupList(info);
 
     if (undefined === lookUpListId)
         throw new Error(`SharePointList getUserLookupSync no LookupListID in (field)info`);
 
-    const controller = getById(lookUpListId) as SharePointList<UserLookup>;
+    const controller = getById(lookUpListId) as unknown as SharePointList<UserLookup>;
     const user: UserLookup = controller.getPartial(userId) as UserLookup;
 
     return user;

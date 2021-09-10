@@ -55,9 +55,9 @@ export class ListItemBase extends Deleteable {
     }
 
     @Exclude()
-    public controller: SharePointList<ListItemBase> = undefined;
+    public controller: SharePointList = undefined;
 
-    public setController = (controller: SharePointList<ListItemBase>) => this.controller = controller;
+    public setController = (controller: SharePointList) => this.controller = controller;
 }
 
 export interface ListItemBaseConstructor<ListItemType extends ListItemBase = ListItemBase> {

@@ -8,9 +8,9 @@ export interface Controller<ControllerType extends DataBase, DataType extends Co
     records: Array<DataType>;
     loadAllRecords: (filter: string) => Promise<void>;
 
-    context;
+    context: any;
 
-    submit: (newRecord: DataType) => Promise<string | void>;
+    submit: (newRecord: DataType) => Promise<void>;
     getByIdSync: (id: number) => DataType | undefined;
     getById: (id: number) => Promise<DataType>;
     getNew: () => Promise<ControllerType>;
@@ -29,6 +29,6 @@ export interface Model<ControllerType extends DataBase, DataType extends Control
     loadAllRecords: () => Promise<void>;
 
     newRecord: DataType;
-    submit: (newRecord?: DataType) => Promise<string | void>;
+    submit: (newRecord?: DataType) => Promise<void>;
 }
 

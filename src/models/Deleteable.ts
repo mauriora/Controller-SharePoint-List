@@ -2,7 +2,7 @@ import { Exclude } from "class-transformer";
 import { DataBase } from "./DataBase";
 
 export interface IDeleteable {
-    canBeDeleted: boolean;
+    readonly canBeDeleted: boolean;
     deleted: boolean;
     delete: () => Promise<void>;
 }
@@ -18,7 +18,7 @@ export abstract class Deleteable extends DataBase implements IDeleteable {
     }
 
     @Exclude()
-    abstract canBeDeleted: boolean;
+    abstract readonly canBeDeleted: boolean;
     abstract delete: () => Promise<void>;
     abstract deleted: boolean;
 }

@@ -61,7 +61,7 @@ export const addTerm = async (setGuid: string, term: MetaTermSP) => {
                 ]
             });
         term.TermGuid = postResult.id
-    } catch (createTermError) {
+    } catch( createTermError: any ) {
         console.error(`Taxonomy.addTerm(${term.Label}) caught ${createTermError.message ?? createTermError}`, { createTermError });
     } finally {
         console.timeEnd(`addTerm(${term.Label})`);

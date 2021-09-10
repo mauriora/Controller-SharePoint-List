@@ -21,6 +21,8 @@ export interface IDataBase {
  * Base class for all data-entities.
  */
 export class DataBase implements IDataBase {
+    // [key: number]: never;
+    // [key: symbol]: never;
 
     /** Source object this has been created from */
     @Exclude()
@@ -59,7 +61,7 @@ export class DataBase implements IDataBase {
             for (const property in this) {
                 if (typeof (this[property]) === 'function') {
                     observableProperties[property] = false;
-                } else if (options.nonObservableProperties.indexOf(property) >= 0) {
+                } else if (options.nonObservableProperties.includes(property)) {
                     observableProperties[property] = false;
                 } else {
                     observableProperties[property] = observable;

@@ -1,9 +1,12 @@
+// causes webpack to fail -> import { defaultMetadataStorage } from 'class-transformer/types/storage';
+// declared in ./MetadataStorage.d.ts
 import { defaultMetadataStorage } from 'class-transformer/esm5/storage';
-//import { defaultMetadataStorage } from 'class-transformer/types/storage';
+
 import { FieldTypes, IFieldInfo } from "@pnp/sp/fields";
 import { ListItemBase, ListItemBaseConstructor } from "../../models/ListItemBase";
 import { Model } from "../controller";
 import { SharePointList } from './SharePointList';
+import { WritablePart } from '../../models/WriteableParts';
 
 export class SharePointModel<DataType extends ListItemBase = ListItemBase> implements Model<ListItemBase, DataType> {
     public model: DataType;
@@ -24,10 +27,12 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
         this.records = controller.records;
     }
 
-    public submit = async (newRecord?: DataType): Promise<string | void> => { 
-        const result = await this.controller.submit(newRecord);
+    public submit = async (newRecord?: DataType): Promise<void> => { 
+        await this.controller.submit(newRecord);
+
+        /** if the parameter newRecord === controller.newRecord,
+         *  then the controller added it to records and created a new newRecord */
         this.newRecord = this.controller.newRecord;
-        return result;
     };
 
     /** fields for $select part of the query */
@@ -47,7 +52,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
     };
 
     /** Property name mapped to SharePoint Fieldinfo  */
-    public get propertyFields(): Map<string, IFieldInfo> {
+    public get propertyFields(): Map<keyof WritablePart<DataType>, IFieldInfo> {
         if( undefined === this._propertyFields) {
             this.initSelectAndExpands();
         }
@@ -63,7 +68,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
     };
 
     private _selectedFields: Map<string, IFieldInfo>;
-    private _propertyFields: Map<string, IFieldInfo>;
+    private _propertyFields: Map<keyof WritablePart<DataType>, IFieldInfo>;
 
     /** fields for $select part of the query */
     private _selectFields: Array<string>;
@@ -82,7 +87,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
         this._propertyFields = propertyFields;
     }
 
-    private static IGNORED_PROPERTIES = [];
+    private static IGNORED_PROPERTIES = new Array<string>();
     private static IGNORED_EXPANDS = ['Author', 'Editor', 'Attachments', 'AverageRating', 'RatingCount', 'Ratings', 'LikesCount', 'TaxKeyword' ];
     private static OPTIONAL_FIELDS = ['TaxKeyword', 'TaxCatchAll', 'AverageRating', 'RatingCount', 'RatedBy', 'Ratings', 'LikesCount', 'LikedBy'];
     
@@ -100,19 +105,20 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
         expandFields.push(fieldName);
     }
 
-    private getSelectAndExpand = (jsFactory: ListItemBaseConstructor<DataType>, fields?: Map<string, IFieldInfo>): { selects: Array<string>, expands: Array<string>, selectedFields?: Map<string, IFieldInfo>, propertyFields?: Map<string, IFieldInfo> } => {
+    private getSelectAndExpand = (jsFactory: ListItemBaseConstructor<DataType>, fields?: Map<string, IFieldInfo>): { selects: Array<string>, expands: Array<string>, selectedFields?: Map<string, IFieldInfo>, propertyFields?: Map<keyof WritablePart<DataType>, IFieldInfo> } => {
         const blankJs = new jsFactory();
         const selects = new Array<string>();
         const expands = new Array<string>();
         const selectedFields = undefined === fields ? undefined : new Map<string, IFieldInfo>();
-        const propertyFields = undefined === fields ? undefined : new Map<string, IFieldInfo>();
+        const propertyFields = undefined === fields ? undefined : new Map<keyof WritablePart<DataType>, IFieldInfo>();
 
-        for (const propertyName in blankJs) {
-            if (typeof (blankJs[propertyName]) === 'function') {
-                // console.debug(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} NOT add ${typeof (blankJs[propertyName])} to select`);
-            } else if (propertyName in SharePointModel.IGNORED_PROPERTIES) {
-                // console.debug(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} NOT add to select`);
-            } else {
+        console.log(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name})`, defaultMetadataStorage)
+
+        const exposedMetadatas = defaultMetadataStorage.getExposedMetadatas(jsFactory)
+
+        // for (const propertyName in blankJs) {
+        for (const exposeData of exposedMetadatas) {
+                const propertyName = exposeData.propertyName;
                 const excludeData = defaultMetadataStorage.findExcludeMetadata(jsFactory, propertyName);
 
                 if (undefined !== excludeData) {
@@ -132,13 +138,13 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
                             } else {
                                 throw new Error(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} not found in fields`);
                             }
-                        } else if (0 <= [FieldTypes.Lookup, FieldTypes.User].indexOf(fieldType)) { // } else if ( fieldType in [FieldTypes.Lookup, FieldTypes.User]) {                        
+                        } else if ([FieldTypes.Lookup, FieldTypes.User].includes(fieldType)) {
                             if (undefined !== typeData) {
                                 const lookUpFields = this.getSelectAndExpand(typeData.typeFunction() as ListItemBaseConstructor<DataType>);
 
                                 SharePointModel.addExpandField(selects, expands, fieldName, lookUpFields.selects);
                                 selectedFields.set(fieldName, fieldInfo);
-                                propertyFields.set(propertyName, fieldInfo);
+                                propertyFields.set(propertyName as keyof WritablePart<DataType>, fieldInfo);
                             } else {
                                 throw new Error(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName}[${fieldInfo.TypeAsString}] no type info`);
                                 // selects.push(fieldName);
@@ -148,7 +154,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
                         } else {
                             selects.push(fieldName);
                             selectedFields.set(fieldName, fieldInfo);
-                            propertyFields.set(propertyName, fieldInfo);
+                            propertyFields.set(propertyName as keyof WritablePart<DataType>, fieldInfo);
                         }
                     } else { // (undefined === fields)
                         if ( SharePointModel.IGNORED_EXPANDS.findIndex(prospect => prospect === fieldName) >= 0  ) {
@@ -164,7 +170,6 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
                             console.warn(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName}[] NOT add to select`, { exposeData, typeData, excludeData, });
                         }
                     }
-                }
             }
         }
         return { selects, expands, selectedFields, propertyFields };
