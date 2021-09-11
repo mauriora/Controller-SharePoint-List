@@ -35,7 +35,7 @@ export class DataBase implements IDataBase {
 
     /** Source object this has been created from */
     @Exclude()
-    public source: unknown = undefined;
+    public source: unknown;
 
     /** If true the item has been modified and not submitted yet*/
     @Exclude()

@@ -10,13 +10,13 @@ export class TaxCatchAll extends DataBase
     }
     
     @Expose( { name: 'ID'})
-    public id: number = undefined;
+    public id: number;
 
     @Expose({ name: 'Term'})
-    public term: string = undefined;
+    public term: string;
 
     @Exclude()
-    public controller: SharePointList<ListItemBase> = undefined;
+    public controller: SharePointList<ListItemBase>;
 
     public setController = (controller: SharePointList<ListItemBase>) => this.controller = controller;
 }
@@ -28,18 +28,18 @@ export class TaxCatchAllFull extends TaxCatchAll
     }
     
     @Expose({ name: 'Title'})
-    public title: string = undefined;
+    public title: string;
 
     @Expose({ name: 'IdForTermStore' })
-    public idForTermStore: string = undefined;
+    public idForTermStore: string;
 
     @Expose({ name: 'IdForTermSet' })
-    public idForTermSet: string = undefined;
+    public idForTermSet: string;
 
     @Expose({ name: 'IdForTerm' })
-    public idForTerm: string = undefined;
+    public idForTerm: string;
     
     @Expose({ name: 'Path' })
-    public path: string = undefined;
+    public path: string;
 }
 

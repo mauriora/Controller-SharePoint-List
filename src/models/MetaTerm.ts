@@ -8,13 +8,13 @@ export class MetaTerm extends DataBase
     }
     
     @Expose({ name: 'Label'})
-    public label: string = undefined;
+    public label: string;
 
     @Expose({ name: 'TermGuid'})
-    public termGuid: string = undefined;
+    public termGuid: string;
 
     @Expose({ name: 'WssId'})
-    public wssId: number = undefined;
+    public wssId: number;
 
     static is = (prospect: any): prospect is MetaTerm => {
         return ('string' === typeof (prospect as MetaTerm).label) &&

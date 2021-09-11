@@ -8,10 +8,10 @@ export class Link extends DataBase
     }
     
     @Expose({ name: 'Description'})
-    public description: string = undefined;
+    public description: string;
 
     @Expose({ name: 'Url'})
-    public url: string = undefined;
+    public url: string;
 
     public static is= (prospect: any): prospect is Link => {
         return ('string' === typeof (prospect as Link).url) &&

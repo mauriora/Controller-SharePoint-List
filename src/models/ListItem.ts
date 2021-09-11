@@ -24,23 +24,23 @@ export class ListItem extends ListItemBase {
 
     @Type(() => UserLookup)
     @Expose({ name: 'Author', toClassOnly: true })
-    author: UserLookup = undefined;
+    author: UserLookup;
 
     @Expose({ name: 'Created', toClassOnly: true })
-    created: string = undefined;
+    created: string;
 
     @Type(() => UserLookup)
     @Expose({ name: 'Editor', toClassOnly: true })
-    editor: UserLookup = undefined;
+    editor: UserLookup;
 
     @Expose({ name: 'Modified', toClassOnly: true })
-    modified: string = undefined;
+    modified: string;
 
     @Expose({ name: 'Attachments' })
-    public hasAttachments: boolean = undefined;
+    public hasAttachments: boolean;
 
     @Expose({ name: 'ContentTypeId' })
-    public contentTypeId: string = undefined;
+    public contentTypeId: string;
 
     @Type(() => MetaTerm)
     @Expose({ name: 'TaxKeyword' })
@@ -51,20 +51,20 @@ export class ListItem extends ListItemBase {
     public taxCatchAll: Array<TaxCatchAll> = new Array<TaxCatchAll>();
 
     @Expose({ name: 'AverageRating', toClassOnly: true })
-    public averageRating: number = undefined;
+    public averageRating: number;
 
     @Expose({ name: 'RatingCount', toClassOnly: true })
-    public ratingCount: number = undefined;
+    public ratingCount: number;
 
     @Type(() => UserLookup)
     @Expose({ name: 'RatedBy', toClassOnly: true })
     public ratedBy: Array<UserLookup> = new Array<UserLookup>();
 
     @Expose({ name: 'Ratings', toClassOnly: true })
-    public ratings: string = undefined;    
+    public ratings: string;    
 
     @Expose({ name: 'LikesCount', toClassOnly: true })
-    public likesCount: number = undefined;
+    public likesCount: number;
 
     @Type(() => UserLookup)
     @Expose({ name: 'LikedBy', toClassOnly: true })

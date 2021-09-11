@@ -32,13 +32,13 @@ export class ListItemBase extends Deleteable {
     }
 
     @Expose({ name: 'ID' })
-    public id: number = undefined;
+    public id: number;
 
     @Expose({ name: 'Title' })
-    public title: string = undefined;
+    public title: string;
 
     @Exclude()
-    public pnpItem: IItem | undefined = undefined;
+    public pnpItem: IItem | undefined;
 
     @Exclude()
     public deleted: boolean = false;
@@ -55,7 +55,7 @@ export class ListItemBase extends Deleteable {
     }
 
     @Exclude()
-    public controller: SharePointList = undefined;
+    public controller: SharePointList;
 
     public setController = (controller: SharePointList) => this.controller = controller;
 }

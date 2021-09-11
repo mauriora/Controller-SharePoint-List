@@ -7,9 +7,9 @@ export class Announcement extends ListItem {
     }
 
     @Expose({ name: 'Body'})
-    public body?: string = undefined;
+    public body?: string;
 
     @Expose({ name: 'Expires'})
-    public expires?: string = undefined;
+    public expires?: string;
 
 }

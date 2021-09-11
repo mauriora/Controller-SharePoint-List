@@ -18,22 +18,22 @@ export class UserLookup extends ListItemBase implements IUserLookup {
     }
 
     @Expose({ name: 'Title' })
-    public title: string = undefined;
+    public title: string;
 
     @Expose({ name: 'Name' })
-    public claims: string = undefined;
+    public claims: string;
 
     @Exclude()
-    public picture: string = undefined;
+    public picture: string;
 
     @Expose({ name: 'JobTitle' })
-    public jobTitle: string = undefined;
+    public jobTitle: string;
 
     @Expose({ name: 'Department' })
-    public department: string = undefined;
+    public department: string;
 
     @Expose({ name: 'MobilePhone'})
-    public mobilePhone: string = undefined;
+    public mobilePhone: string;
 
 }
 
@@ -44,26 +44,26 @@ export class UserFull extends UserLookup implements IUserFull  {
     }
 
     @Expose({ name: 'EMail' })
-    public email: string = undefined;
+    public email: string;
 
     @Expose({ name: 'OtherMail' })
-    public otherMail: string = undefined;
+    public otherMail: string;
 
     @Expose({ name: 'UserName' })
-    public userName: string = undefined;
+    public userName: string;
 
     @Expose({ name: 'UserInfoHidden' })
     public userInfoHidden: boolean = undefined
 
     @Expose({ name: 'ImnName'})
-    public imnName: string = undefined;
+    public imnName: string;
 
     @Exclude()
-    public sip: string = undefined;
+    public sip: string;
 
     @Exclude()
-    public value: string = undefined;
+    public value: string;
 
     // @Expose({ name: 'Id' })
-    // id: string = undefined;
+    // id: string;
 }
