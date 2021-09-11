@@ -1,6 +1,5 @@
 import { Exclude } from "class-transformer";
-import { makeObservable, observable } from "mobx";
-import { Controller } from "../controller/controller";
+import { IObjectDidChange, makeObservable, observable, observe } from "mobx";
 
 export interface InitOpions {
     nonObservableProperties?: Array<string>;
@@ -14,6 +13,9 @@ export interface IDataBase {
     init: (options?: InitOpions) => this;
 
     source: unknown;
+
+    /** If true the item has been modified and not submitted yet*/
+    dirty: boolean;
 }
 
 
@@ -21,12 +23,23 @@ export interface IDataBase {
  * Base class for all data-entities.
  */
 export class DataBase implements IDataBase {
-    // [key: number]: never;
+    [key: string]: any;
+    /** Don't allow number indexing as array */
+    [key: number]: never;
+
+    // /** Don't allow symbols indexing as array */
+    //TODO Test with TypeScript 4.4 and higher
+    // Causes: error TS1023: An index signature parameter type must be either 'string' or 'number'.
+    //TODO Would this work with mobx?
     // [key: symbol]: never;
 
     /** Source object this has been created from */
     @Exclude()
     public source: unknown = undefined;
+
+    /** If true the item has been modified and not submitted yet*/
+    @Exclude()
+    public dirty: boolean = false;
 
     public constructor() {
     }
@@ -39,6 +52,16 @@ export class DataBase implements IDataBase {
         }
 
         return fullOptions;
+    }
+
+    private onChange = (change: IObjectDidChange) => {
+        if(change.name !== 'dirty' && ! this.dirty) {
+            console.log(`DataBase[${this.constructor.name}].onChange(${String(change.name)}) set dirty`);
+            this.dirty = true;
+        }
+        if(change.name === 'dirty' && ! this.dirty) {
+            console.log(`DataBase[${this.constructor.name}].onChange (not dirty)`);
+        }
     }
 
     @Exclude()
@@ -69,9 +92,11 @@ export class DataBase implements IDataBase {
             }
             console.debug(`DataBase[${this.constructor.name}].init() makeObservable`, { observableProperties, options, meNow: { ...this }, me: this });
             makeObservable(this, observableProperties);
+            observe( this, this.onChange);
         }
         return this;
     }
+
 }
 
 export interface DataBaseConstructor<DataType extends DataBase = DataBase> {

@@ -16,6 +16,7 @@ import { plainToClass, plainToClassFromExist } from 'class-transformer';
 import { ODataError } from '../../models/OData/Error';
 import { DataError } from '../../models/DataError';
 import { allowsMultipleValues, getLookupList } from './FieldInfo';
+import { ListItem } from '../..';
 
 const TAX_CATCH_ALL_FIELD = 'TaxCatchAll';
 
@@ -127,6 +128,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
             }
             console.log(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].submit() add response=${newID}`, { jsRecord, submitRecord, createResponse });
         }
+        jsRecord.dirty = false;
     }
 
 
@@ -281,16 +283,16 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
         if (existing) {
             return existing;
         }
-        const newModel = new SharePointModel(jsFactory, this, filter);
-        newModel.records = this.records as Array<DataType>;
-        this.models.set(jsFactory, newModel);
+        const newModel = new SharePointModel(jsFactory, this as unknown as SharePointList<ModelType>, filter);
+        newModel.records = this.records as Array<ModelType>;
+        this.models.set(jsFactory, newModel as unknown as SharePointModel<DataType>);
 
         if (this.initialised) {
-            await this.addModelSelectAndExpand(newModel);
+            await this.addModelSelectAndExpand(newModel as unknown as SharePointModel<DataType>);
             await this.createRequiredChildController();
         }
-        //TODO: Shouldn't this work without converting?
-        return newModel as unknown as SharePointModel<ModelType>;
+
+        return newModel;
     }
 
     /**
@@ -357,7 +359,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
      * otherwise use this one. 
      * Used to "resolve" intiaially created ChildItems 
      **/
-    public addGetPartial<T extends Partial<DataType> & ListItemBase>(item: T): T {
+    public async addGetPartial<T extends Partial<DataType> & ListItemBase>(item: T): Promise<T> {
         const existing = this.getPartial(item.id);
         if (existing) {
             return existing as T;
@@ -370,7 +372,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
 
         this.partialItems.push(item);
         if (this.autoLoadPartials) {
-            this.loadAndShiftPartials();
+            await this.loadAndShiftPartials();
         }
         return item;
     }
@@ -593,8 +595,9 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
 
         setNullArrays(instance, this.propertyFields);
         if (plain) {
-            this.connectLookUp(instance);
-            await fixSingleTaxonomyFields(instance, this.propertyFields);
+            await this.connectLookUp(instance);
+            if(instance instanceof ListItem)
+                await fixSingleTaxonomyFields(instance, this.propertyFields);
         }
         if (instance.setController) {
             instance.setController(this as unknown as SharePointList);
@@ -614,42 +617,41 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase> implem
         return instance;
     }
 
-    private connectLookUp = (item: DataType) => {
+    private connectLookUp = async (item: DataType) => {
         for (const [property, mappingInfo] of this.lookupMappings) {
-            if ('string' === typeof (property)) {
-                const tempLookup = item[property];
-                if (undefined !== tempLookup) {
-                    if (undefined !== (item.source as any)[mappingInfo.thisFieldName]?.['__deferred'] && 'id' in tempLookup && undefined === (tempLookup as any)['id']) {
-                        console.warn(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp .${property}=${tempLookup} don't know what to do with deferred, set ${property}=undefined !!`, { item, property, tempLookup, mappingInfo });
-                        const fieldInfo = this.propertyFields.get(property);
+            const tempLookup = item[property];
+            if (undefined !== tempLookup) {
+                if (undefined !== (item.source as Record<string, any>)[mappingInfo.thisFieldName]?.['__deferred'] && 'id' in tempLookup && undefined === tempLookup['id']) {
+                    console.warn(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp .${property}=${tempLookup} don't know what to do with deferred, set ${property}=undefined !!`, { item, property, tempLookup, mappingInfo });
+                    const fieldInfo = this.propertyFields.get(property);
 
-                        if (allowsMultipleValues(fieldInfo)) {
-                            console.error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp .${property}=${tempLookup} don't know what to do with deferred, set ${property}=Array THIS SHOULD BE DONE BY setNullArrays !!`, { item, property, tempLookup, mappingInfo });
-                            item[property] = new Array() as any;
-                        } else {
-                            item[property] = undefined;
-                        }
+                    if (allowsMultipleValues(fieldInfo)) {
+                        console.error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp .${property}=${tempLookup} don't know what to do with deferred, set ${property}=Array THIS SHOULD BE DONE BY setNullArrays !!`, { item, property, tempLookup, mappingInfo });
+                        item[property] = new Array() as any;
                     } else {
-                        const isArray = Array.isArray(tempLookup);
-                        const lookupController = getById(mappingInfo.listId) as SharePointList;
+                        item[property] = undefined;
+                    }
+                } else {
+                    const isArray = Array.isArray(tempLookup);
+                    const lookupController = getById(mappingInfo.listId) as SharePointList;
+                    const lookupItems = isArray ? tempLookup as unknown as Array<any> : [tempLookup];
 
-                        (isArray ? tempLookup as unknown as Array<any> : [tempLookup]).forEach((lookup, index) => {
-                            if (undefined === lookup.id) {
-                                throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp(${item?.id}).${property} no Id`);
+                    for(let index=0; index < lookupItems.length; index++) {
+                        const lookup = lookupItems[index];
+                        if (undefined === lookup.id) {
+                            throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp(${item?.id}).${property} no Id`);
+                        } else {
+                            const lookupItem = await lookupController.addGetPartial(lookup);
+                            if (undefined === lookupItem) {
+                                throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp(${item?.id}) .${property}[${lookup.id}] problem addGetPartial`);
                             } else {
-                                const lookupItem = lookupController.addGetPartial(lookup);
-
-                                if (undefined === lookupItem) {
-                                    throw new Error(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].connectLookUp(${item?.id}) .${property}[${lookup.id}] problem addGetPartial`);
+                                if (isArray) {
+                                    item[property][index] = lookupItem;
                                 } else {
-                                    if (isArray) {
-                                        (item[property] as any)[index] = lookupItem;
-                                    } else {
-                                        item[property] = lookupItem;
-                                    }
+                                    item[property] = lookupItem;
                                 }
                             }
-                        });
+                        }
                     }
                 }
             }
