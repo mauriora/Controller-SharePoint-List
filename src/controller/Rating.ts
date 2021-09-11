@@ -5,7 +5,7 @@ import {
 
 const RATING_API = "_api/Microsoft.Office.Server.ReputationModel.Reputation.SetRating(listID=@a1,itemID=@a2,rating=@a3)";
 
-export const setRating = async (rating: number, item: ListItem) => {
+export const setRating = async (rating: number, item: ListItem): Promise<void> => {
     const rateUrl = `${item.controller.site.url}/${RATING_API}?@a1='{${item.controller.listId}}'&@a2='${item.id}'&@a3=${rating}`;
     console.log(`setRating(${rating}, ${item.controller.listId}, ${item.id})`, {rateUrl, item});
 
@@ -15,8 +15,8 @@ export const setRating = async (rating: number, item: ListItem) => {
         if(true === response.ok) {
             return;
         }
-        console.error(`setRating(${rating}): Problem setting rating: ${response.statusMessage}`, {response, item})
+        console.error(`setRating(${rating}): Problem setting rating: ${response.statusText}`, {response, item})
     } catch( setRatingException ) {
-        console.error(`setRating(${rating}): Problem setting rating: ${setRatingException.message}`, {setRatingException, item});
+        console.error(`setRating(${rating}): Problem setting rating: ${setRatingException.toString()}`, {setRatingException, item});
     }
 }

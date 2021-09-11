@@ -2,16 +2,13 @@ import { IPrincipal } from '@pnp/spfx-controls-react';
 import { Exclude, Expose } from 'class-transformer';
 import { ListItemBase } from './ListItemBase';
 
-export interface IUserFull extends Omit<IPrincipal, 'id'> {
-}
+export type IUserFull = Omit<IPrincipal, 'id'>;
 
-export interface IUserLookup extends Pick<IPrincipal, 'title'> {
-
-}
+export type IUserLookup = Pick<IPrincipal, 'title'>;
 
 export class UserLookup extends ListItemBase implements IUserLookup {
 
-    public get canBeDeleted() { return false };
+    public get canBeDeleted(): boolean { return false }
 
     public constructor() {
         super();

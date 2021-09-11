@@ -21,7 +21,7 @@ export const hasLookupList = (fieldInfo: IFieldInfo | IFieldInfoWithLookupList):
     (fieldInfo as IFieldInfoWithLookupList).LookupList !== undefined &&
     'string' === typeof((fieldInfo as IFieldInfoWithLookupList).LookupList);
 }
-export const getLookupList = (fieldInfo: IFieldInfo | IFieldInfoWithLookupList) =>
+export const getLookupList = (fieldInfo: IFieldInfo | IFieldInfoWithLookupList): false | string => 
     hasLookupList(fieldInfo) &&
     fieldInfo.LookupList;
 
@@ -44,7 +44,7 @@ export const hasTermSetId = (fieldInfo: IFieldInfo | IFieldInfoWithTermSetId): f
     (fieldInfo as IFieldInfoWithTermSetId).TermSetId !== undefined &&
     'string' === typeof((fieldInfo as IFieldInfoWithTermSetId).TermSetId);
 
-export const getTermSetId = (fieldInfo: IFieldInfo | IFieldInfoWithTermSetId) =>
+export const getTermSetId = (fieldInfo: IFieldInfo | IFieldInfoWithTermSetId): false | string =>
     hasTermSetId(fieldInfo) &&
     fieldInfo.TermSetId;
 
@@ -57,7 +57,7 @@ export const hasChoices = (fieldInfo: IFieldInfo | IFieldInfoWithChoices): field
     (fieldInfo as IFieldInfoWithChoices).Choices !== undefined &&
     Array.isArray((fieldInfo as IFieldInfoWithChoices).Choices);
 
-export const getChoices = (fieldInfo: IFieldInfo | IFieldInfoWithChoices) =>
+export const getChoices = (fieldInfo: IFieldInfo | IFieldInfoWithChoices): false | Array<string> =>
     hasChoices(fieldInfo) &&
     fieldInfo.Choices;
 
@@ -69,7 +69,7 @@ export const hasDisplayFormat = (fieldInfo: IFieldInfo | IFieldInfoWithDisplayFo
     (fieldInfo as IFieldInfoWithDisplayFormat).DisplayFormat !== undefined &&
     'number' === typeof((fieldInfo as IFieldInfoWithDisplayFormat).DisplayFormat);
 
-export const getDisplayFormat = (fieldInfo: IFieldInfo | IFieldInfoWithDisplayFormat) =>
+export const getDisplayFormat = (fieldInfo: IFieldInfo | IFieldInfoWithDisplayFormat): false | number =>
     hasDisplayFormat(fieldInfo) &&
     fieldInfo.DisplayFormat;
 
@@ -103,7 +103,7 @@ export const hasMaximumValue = (fieldInfo: IFieldInfo | IFieldInfoWithMaximumVal
     (fieldInfo as IFieldInfoWithMaximumValue).MaximumValue !== undefined &&
     'number' === typeof((fieldInfo as IFieldInfoWithMaximumValue).MaximumValue);
 
-export const getMaximumValue = (fieldInfo: IFieldInfo | IFieldInfoWithMaximumValue) =>
+export const getMaximumValue = (fieldInfo: IFieldInfo | IFieldInfoWithMaximumValue): false | number =>
     hasMaximumValue(fieldInfo) &&
     fieldInfo.MaximumValue;
 
@@ -115,7 +115,7 @@ export const hasMinimumValue = (fieldInfo: IFieldInfo | IFieldInfoWithMinimumVal
     (fieldInfo as IFieldInfoWithMinimumValue).MinimumValue !== undefined &&
     'number' === typeof((fieldInfo as IFieldInfoWithMinimumValue).MinimumValue);
 
-export const getMinimumValue = (fieldInfo: IFieldInfo | IFieldInfoWithMinimumValue) =>
+export const getMinimumValue = (fieldInfo: IFieldInfo | IFieldInfoWithMinimumValue): false | number =>
     hasMinimumValue(fieldInfo) &&
     fieldInfo.MinimumValue;
 
@@ -127,7 +127,7 @@ export const hasTimeFormat = (fieldInfo: IFieldInfo | IFieldInfoWithTimeFormat):
     (fieldInfo as IFieldInfoWithTimeFormat).TimeFormat !== undefined &&
     'number' === typeof((fieldInfo as IFieldInfoWithTimeFormat).TimeFormat);
 
-export const getTimeFormat = (fieldInfo: IFieldInfo | IFieldInfoWithTimeFormat) =>
+export const getTimeFormat = (fieldInfo: IFieldInfo | IFieldInfoWithTimeFormat): false | number =>
     hasTimeFormat(fieldInfo) &&
     fieldInfo.TimeFormat;
     

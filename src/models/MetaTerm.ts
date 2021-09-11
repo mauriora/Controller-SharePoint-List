@@ -16,7 +16,7 @@ export class MetaTerm extends DataBase
     @Expose({ name: 'WssId'})
     public wssId: number;
 
-    static is = (prospect: any): prospect is MetaTerm => {
+    static is = (prospect: unknown): prospect is MetaTerm => {
         return ('string' === typeof (prospect as MetaTerm).label) &&
         (undefined === (prospect as MetaTerm).termGuid || 'string' === typeof (prospect as MetaTerm).termGuid) &&
         (undefined === (prospect as MetaTerm).wssId || 'number' === typeof (prospect as MetaTerm).wssId);

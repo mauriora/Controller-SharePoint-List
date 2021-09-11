@@ -13,7 +13,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
     public newRecord: DataType;
 
     public records: Array<DataType>;
-    public loadAllRecords = async () => this.controller.loadAllRecords(this.filter);
+    public loadAllRecords = async (): Promise<void> => this.controller.loadAllRecords(this.filter);
 
     public jsFactoryFactory: () => ListItemBaseConstructor<DataType>;
 
@@ -41,7 +41,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
             this.initSelectAndExpands();
         }
         return this._selectFields;
-    };
+    }
 
     /** fields for $expand part of the query */
     public get expandFields(): Array<string> {
@@ -49,7 +49,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
             this.initSelectAndExpands();
         }
         return this._expandFields;
-    };
+    }
 
     /** Property name mapped to SharePoint Fieldinfo  */
     public get propertyFields(): Map<keyof WritablePart<DataType>, IFieldInfo> {
@@ -57,7 +57,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
             this.initSelectAndExpands();
         }
         return this._propertyFields;
-    };
+    }
 
     /** Property name mapped to SharePoint Fieldinfo  */
     public get selectedFields(): Map<string, IFieldInfo> {
@@ -65,7 +65,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
             this.initSelectAndExpands();
         }
         return this._selectedFields;
-    };
+    }
 
     private _selectedFields: Map<string, IFieldInfo>;
     private _propertyFields: Map<keyof WritablePart<DataType>, IFieldInfo>;
@@ -163,11 +163,11 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
                             // const lookUpFields = this.getSelectAndExpand(typeData.typeFunction());
                             // SharePointModel.addExpandField( selects, expands, fieldName, lookUpFields.selects );
                             console.warn(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} Ignore Sub Expansion`, { blankJs, exposeData, typeData, excludeData, selects, expands });
-                        } else if (true || ['ID', 'Title'].find(prospect => prospect === fieldName)) {
+                        } else { // if (true || ['ID', 'Title'].find(prospect => prospect === fieldName)) {
                             // console.warn(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName}[] add to select`, { exposeData, typeData, excludeData, });
                             selects.push(fieldName);
-                        } else {
-                            console.warn(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName}[] NOT add to select`, { exposeData, typeData, excludeData, });
+                        // } else {
+                        //     console.warn(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName}[] NOT add to select`, { exposeData, typeData, excludeData, });
                         }
                     }
             }

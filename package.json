@@ -8,8 +8,9 @@
     "node": ">=14.16.0"
   },
   "scripts": {
-    "build": "tsc --build",
-    "buildBROKEN": "tslint --project .\\tsconfig.json && tsc",
+    "lint": "eslint .",
+    "build": "eslint . && tsc --build",
+    "rebuild": "eslint . && tsc --build --clean && tsc --build",
     "clean": "tsc --build --clean"
   },
   "dependencies": {
@@ -35,7 +36,11 @@
     "@types/es6-promise": "0.0.33",
     "@types/mocha": "2.2.38",
     "@types/webpack-env": "1.13.1",
-    "ajv": "~5.2.2"
+    "@typescript-eslint/eslint-plugin": "^4.31.0",
+    "@typescript-eslint/typescript-estree": "^4.31.0",
+    "@typescript-eslint/parser": "^4.31.0",
+    "ajv": "~5.2.2",
+    "eslint": "^7.32.0"
   },
   "peerDependencies": {
     "@microsoft/sp-core-library": "^1.12.1"

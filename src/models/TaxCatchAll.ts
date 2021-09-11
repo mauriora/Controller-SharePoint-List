@@ -18,7 +18,7 @@ export class TaxCatchAll extends DataBase
     @Exclude()
     public controller: SharePointList<ListItemBase>;
 
-    public setController = (controller: SharePointList<ListItemBase>) => this.controller = controller;
+    public setController = (controller: SharePointList<ListItemBase>): void => {this.controller = controller; };
 }
 
 export class TaxCatchAllFull extends TaxCatchAll

@@ -40,7 +40,7 @@ export const getDefaultSite = (): SiteInfo => {
  /**
  * Remove trailing space from siteUrl
  */
-export const normaliseSiteUrl = (siteUrl: String) => siteUrl.replace(/\/$/, '');
+export const normaliseSiteUrl = (siteUrl: string): string => siteUrl.replace(/\/$/, '');
 
 const createIsolatedSpRest = async (siteUrl: string): Promise<SPRest> => {
     const normalisedSiteUrl = normaliseSiteUrl(siteUrl);
@@ -72,7 +72,7 @@ const createIsolatedSpRest = async (siteUrl: string): Promise<SPRest> => {
  * @param siteUrl 
  * @returns a SiteInfo with at least url, web, sp
  */
- export const getSite = async (siteUrl: string) => {
+ export const getSite = async (siteUrl: string): Promise<SiteInfo> => {
     const normalisedSiteUrl = normaliseSiteUrl(siteUrl);
 
     let site: SiteInfo = sites.get(normalisedSiteUrl);
@@ -98,17 +98,15 @@ const createIsolatedSpRest = async (siteUrl: string): Promise<SPRest> => {
  * @param siteUrl 
  * @returns a SiteInfo with at least url, web, sp
  */
-export const getSiteSync = (siteUrl: string) => {
+export const getSiteSync = (siteUrl: string): SiteInfo => {
     const normalisedSiteUrl = normaliseSiteUrl(siteUrl);
 
-    let site: SiteInfo = sites.get(normalisedSiteUrl);
+    const site: SiteInfo = sites.get(normalisedSiteUrl);
 
-    if (undefined === site) {
-    }
     return site;
 }
 
-export const getCurrentUser = (siteUrl: string) => getSiteSync(siteUrl).currentUser;
+export const getCurrentUser = (siteUrl: string): ISiteUserInfo => getSiteSync(siteUrl).currentUser;
 
 /**
  * Call this from WebPart.onInit and pass the this.context as parameter.
@@ -116,7 +114,7 @@ export const getCurrentUser = (siteUrl: string) => getSiteSync(siteUrl).currentU
  * 
  * @param defaultContext this.context of the WebPart or Extension
  */
- export const init = async (defaultContext: WebPartContext | ExtensionContext) => {
+ export const init = async (defaultContext: WebPartContext | ExtensionContext): Promise<void> => {
     if (sites.has('')) {
         console.warn(`SharePoint/Site:init(): default context already set to ${getDefaultSite().url}, re-setting to ${defaultContext.pageContext?.web?.absoluteUrl}`);
     }

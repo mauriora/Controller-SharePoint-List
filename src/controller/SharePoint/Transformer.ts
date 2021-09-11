@@ -7,31 +7,41 @@ import { MetaTerm, MetaTermSP } from "../../models/MetaTerm";
 import { addTerm } from "../Taxonomy";
 import { allowsMultipleValues, getTermSetId, isKeyword } from "./FieldInfo";
 
-export const resultArrayToArray = (plain: Record<string, any>, selectedFields: Map<string, IFieldInfo>) => {
+export interface ResultsArray {
+    [key: string]: { results?: [] } | [];
+}
+
+export const resultArrayToArray = (plain: ResultsArray, selectedFields: Map<string, IFieldInfo>): void => {
     for (const [fieldName, info] of selectedFields.entries()) {
-        if ( allowsMultipleValues(info) && plain[fieldName]?.['results']) {
-            plain[fieldName] = plain[fieldName]['results'];
+        const fieldValue = plain[fieldName];
+        if (allowsMultipleValues(info) && fieldValue && 'results' in fieldValue) {
+            plain[fieldName] = fieldValue.results;
         }
     }
 }
 
-export const setNullArrays = <ItemType extends ListItemBase>(item: ItemType, propertyFields: Map<keyof ItemType, IFieldInfo>) => {
-    const source = item.source as Record<string, any>;
+export interface DeferredContainer {
+    [key: string]: { '__deferred': unknown } | [];
+}
+
+export const setNullArrays = <ItemType extends ListItemBase>(item: ItemType, propertyFields: Map<keyof ItemType, IFieldInfo>): void => {
+    const source = item.source as DeferredContainer | undefined;
 
     for (const [propertyName, info] of propertyFields) {
         if (allowsMultipleValues(info) || info.FieldTypeKind === FieldTypes.MultiChoice) {
-            if (!item[propertyName] || undefined !== source?.[info.InternalName]?.['__deferred']) {
-                if (undefined !== source?.[info.InternalName]?.['__deferred']) {
+            const sourceValue = source?.[info.InternalName];
+            if (!item[propertyName] || (sourceValue && '__deferred' in sourceValue)) {
+                if (sourceValue && '__deferred' in sourceValue) {
                     console.warn(`setNullArrays .${propertyName} don't know what to do with deferred, set ${propertyName}=empty array !!`, { item, propertyName });
                 }
-                item[propertyName] = new Array() as any;
+                (item[propertyName] as unknown) = [];
             }
         }
     }
 }
 
 
-export const fixSingleTaxonomyFields = <ItemType extends ListItem>(item: ItemType, propertyFields: Map<keyof ItemType, IFieldInfo>) => {
+export const fixSingleTaxonomyFields = <ItemType extends ListItem>(item: ItemType, propertyFields: Map<keyof ItemType, IFieldInfo>): void => {
     for (const [propertyName, field] of propertyFields.entries()) {
         if (FieldTypes.Invalid === field.FieldTypeKind && 'TaxonomyFieldType' === field.TypeAsString) {
             const metaTerm = (item[propertyName] as MetaTerm);
@@ -58,7 +68,7 @@ const toTermStringSP = (terms: Array<MetaTermSP>): string =>
 
 /** Returns the fieldname for a multi metadata field, required to update the item. */
 const getHiddenMetadataField = (normalName: string, allFields: Map<string, IFieldInfo>, fieldInfo?: IFieldInfo): string => {
-    if (fieldInfo && isKeyword( fieldInfo) ) {
+    if (fieldInfo && isKeyword(fieldInfo)) {
         return 'TaxKeywordTaxHTField';
     }
     const hiddenFieldTitle = normalName + '_0';
@@ -72,7 +82,7 @@ const getHiddenMetadataField = (normalName: string, allFields: Map<string, IFiel
 }
 
 
-const toTaxonomyFieldTypeMulti = async (submitRecord: Record<string, any>, propertyName: string, terms: Array<MetaTermSP>, fieldInfo: IFieldInfo, allFields: Map<string, IFieldInfo>) => {
+const toTaxonomyFieldTypeMulti = async (submitRecord: Record<string, string>, propertyName: string, terms: Array<MetaTermSP>, fieldInfo: IFieldInfo, allFields: Map<string, IFieldInfo>) => {
     console.warn(`[${submitRecord['ID']}].toTaxonomyFieldTypeMulti() NOT QUITE IMPLEMENTED YET ${propertyName}`, { submitRecordNow: { ...submitRecord }, propertyName, termsNow: terms ? { ...terms } : terms });
 
     if (terms && terms.length) {
@@ -80,7 +90,11 @@ const toTaxonomyFieldTypeMulti = async (submitRecord: Record<string, any>, prope
 
         for (const term of terms) {
             if (EmptyGuid === term.TermGuid) {
-                await addTerm( getTermSetId( fieldInfo ), term);
+                const termSetId = getTermSetId(fieldInfo);
+
+                if (false === termSetId) throw new Error(`[${submitRecord['ID']}].toTaxonomyFieldTypeMulti() can't get TermSetId from FieldInfo ${fieldInfo}`);
+
+                await addTerm(termSetId, term);
             }
         }
         const termsString = toTermStringSP(terms);
@@ -99,18 +113,27 @@ const toTaxonomyFieldTypeMulti = async (submitRecord: Record<string, any>, prope
     }
 }
 
-const toTaxonomyFieldType = (submitRecord: Record<string, any>, propertyName: string, term: MetaTermSP) => {
+interface TaxonomySubmitField extends MetaTermSP {
+        "__metadata": { "type": "SP.Taxonomy.TaxonomyFieldValue" },
+        WssId: -1 // Was '-1'
+}
+
+interface TaxonomySubmitRecord {
+    [key: string]: TaxonomySubmitField;
+}
+
+const toTaxonomyFieldType = (submitRecord: TaxonomySubmitRecord, propertyName: string, term: MetaTermSP) => {
     if (term) {
         submitRecord[propertyName] = {
             "__metadata": { "type": "SP.Taxonomy.TaxonomyFieldValue" },
             ...term,
-            WssId: '-1'
+            WssId: -1
         };
         console.log(`[${submitRecord['ID']}].toTaxonomyFieldType() ${propertyName}`, { originalValue: term ? { ...term } : term, convertedValue: submitRecord[propertyName] ? { ...submitRecord[propertyName] } : submitRecord[propertyName] });
     }
 }
 
-export const toSubmit = async (jsRecord: ListItemBase, selectedFields: Map<string, IFieldInfo>, allFields: Map<string, IFieldInfo>) => {
+export const toSubmit = async (jsRecord: ListItemBase, selectedFields: Map<string, IFieldInfo>, allFields: Map<string, IFieldInfo>): Promise<Record<string, unknown>> => {
     const submitRecord = classToPlain(jsRecord, { excludeExtraneousValues: true });
     console.debug(`[${jsRecord.id}].toSubmit()`, { jsRecord: { ...jsRecord }, submitRecord: { ...submitRecord } });
 

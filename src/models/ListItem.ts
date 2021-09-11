@@ -18,7 +18,7 @@ export class ListItem extends ListItemBase {
         super();
     }
 
-    public init(options?: InitOpions) {
+    public init(options?: InitOpions): this {
         return super.init(options);
     }
 
@@ -71,12 +71,12 @@ export class ListItem extends ListItemBase {
     public likedBy: Array<UserLookup> = new Array<UserLookup>();
 
     @Exclude()
-    public isLikedByMe = () => this.likedBy.some(
+    public isLikedByMe = (): boolean => this.likedBy.some(
         prospect => this.controller.site.currentUser.Id === prospect.id
     );
 
     @Exclude()
-    public toggleLike = async () => {
+    public toggleLike = async (): Promise<void> => {
         if (!this.pnpItem) throw new Error(`ListItem[${this.constructor.name}]#${this.id}@${this.controller?.listInfo?.Title ?? this.controller?.listId}.toggleLike(): no pnpItem, has this item been created?`)
 
         const mySiteUser = this.controller.site.currentUser;
@@ -104,12 +104,12 @@ export class ListItem extends ListItemBase {
     }
 
     @Exclude()
-    public isRatedByMe = () => this.ratedBy.some(
+    public isRatedByMe = (): boolean=> this.ratedBy.some(
         prospect => this.controller.site.currentUser.Id === prospect.id
     );
 
     @Exclude()
-    public myRating = () => {
+    public myRating = (): number | undefined => {
         console.log(`ListItem[${this.constructor.name}]#${this.id}@${this.controller?.listInfo?.Title ?? this.controller?.listId}.myRating(${this.controller?.site?.currentUser?.Id})`, {ratings: this.ratings, ratedBy: this.ratedBy});
 
         const myUserId = this.controller.site.currentUser.Id;
@@ -122,7 +122,7 @@ export class ListItem extends ListItemBase {
     };
 
     @Exclude()
-    public setRating = async (rating: number) => {
+    public setRating = async (rating: number): Promise<void> => {
         await setRating(rating, this);
         if(! this.isRatedByMe()) {
             const me = getUserLookupSync(

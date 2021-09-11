@@ -36,9 +36,9 @@ interface AddTermResponse {
     "id": string;
     "labels": Array<TermLabel>;
     "lastModifiedDateTime": string;
-};
+}
 
-export const addTerm = async (setGuid: string, term: MetaTermSP) => {
+export const addTerm = async (setGuid: string, term: MetaTermSP): Promise<MetaTermSP> => {
     if (!(setGuid && term && term.Label))
         throw new Error(`addTerm( setGuid: ${setGuid}, term.Label: ${term?.Label})`);
 
@@ -69,7 +69,7 @@ export const addTerm = async (setGuid: string, term: MetaTermSP) => {
     return term;
 }
 
-export const getTerm = async (sp: SPRest, groupGuid: string, setGuid: string, termGuid: string) => {
+export const getTerm = async (sp: SPRest, groupGuid: string, setGuid: string, termGuid: string): Promise<ITermInfo> => {
     if (undefined === termGuid)
         throw new Error(`getTerm(sp: ${sp}, groupGuid: ${groupGuid}, setGuid: ${setGuid}, termGuid: ${termGuid}) require termGuid`);
 

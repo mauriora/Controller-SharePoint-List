@@ -16,16 +16,13 @@ import { SharePointList } from '../controller/SharePoint/SharePointList';
 /**
  * Minimal SharePoint ListItem inteface, extended to contain author & editor
  */
-const ignoredProps = [
-    'controller'
-]
 export class ListItemBase extends Deleteable {
 
     public constructor() {
         super();
     }
 
-    public init(options?: InitOpions) {
+    public init(options?: InitOpions): this {
         options = DataBase.initOptions(options);
         options.nonObservableProperties.push('pnpItem')
         return super.init(options);
@@ -41,13 +38,13 @@ export class ListItemBase extends Deleteable {
     public pnpItem: IItem | undefined;
 
     @Exclude()
-    public deleted: boolean = false;
+    public deleted = false;
 
     @Exclude()
-    public get canBeDeleted() { return (undefined !== this.pnpItem?.delete); }
+    public get canBeDeleted(): boolean { return (undefined !== this.pnpItem?.delete); }
 
     @Exclude()
-    public delete = async () => {
+    public delete = async (): Promise<void> => {
         if (!this.canBeDeleted) throw new Error(`ListItemBase[${this.id}] can't be deleted`);
 
         await this.pnpItem.delete();
@@ -57,7 +54,7 @@ export class ListItemBase extends Deleteable {
     @Exclude()
     public controller: SharePointList;
 
-    public setController = (controller: SharePointList) => this.controller = controller;
+    public setController = (controller: SharePointList): void => {this.controller = controller; }
 }
 
 export interface ListItemBaseConstructor<ListItemType extends ListItemBase = ListItemBase> {
