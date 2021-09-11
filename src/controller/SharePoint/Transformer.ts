@@ -16,10 +16,12 @@ export const resultArrayToArray = (plain: Record<string, any>, selectedFields: M
 }
 
 export const setNullArrays = <ItemType extends ListItemBase>(item: ItemType, propertyFields: Map<keyof ItemType, IFieldInfo>) => {
+    const source = item.source as Record<string, any>;
+
     for (const [propertyName, info] of propertyFields) {
         if (allowsMultipleValues(info) || info.FieldTypeKind === FieldTypes.MultiChoice) {
-            if (!item[propertyName] || undefined !== (item.source as any)?.[info.InternalName]?.['__deferred']) {
-                if (undefined !== (item.source as any)?.[info.InternalName]?.['__deferred']) {
+            if (!item[propertyName] || undefined !== source?.[info.InternalName]?.['__deferred']) {
+                if (undefined !== source?.[info.InternalName]?.['__deferred']) {
                     console.warn(`setNullArrays .${propertyName} don't know what to do with deferred, set ${propertyName}=empty array !!`, { item, propertyName });
                 }
                 item[propertyName] = new Array() as any;
@@ -29,14 +31,14 @@ export const setNullArrays = <ItemType extends ListItemBase>(item: ItemType, pro
 }
 
 
-export const fixSingleTaxonomyFields = <ItemType extends ListItemBase>(item: ItemType, propertyFields: Map<keyof ItemType, IFieldInfo>) => {
+export const fixSingleTaxonomyFields = <ItemType extends ListItem>(item: ItemType, propertyFields: Map<keyof ItemType, IFieldInfo>) => {
     for (const [propertyName, field] of propertyFields.entries()) {
         if (FieldTypes.Invalid === field.FieldTypeKind && 'TaxonomyFieldType' === field.TypeAsString) {
-            const metaTerm = (item[propertyName] as unknown as MetaTerm);
+            const metaTerm = (item[propertyName] as MetaTerm);
             if (metaTerm) {
-                if ((item as unknown as ListItem).taxCatchAll) {
+                if (item.taxCatchAll) {
                     const id = Number.parseInt(metaTerm.label);
-                    const catchAll = (item as unknown as ListItem).taxCatchAll.find(prospect => id === prospect.id);
+                    const catchAll = item.taxCatchAll.find(prospect => id === prospect.id);
                     metaTerm.label = catchAll.term;
                 } else {
                     console.error(`[${item.id}].fixSingleTaxonomyFields ${propertyName} ${metaTerm?.label} no catchAll`, { metaTerm, item });
