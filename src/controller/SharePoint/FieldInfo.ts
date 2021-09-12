@@ -53,7 +53,7 @@ export interface IFieldInfoWithChoices extends IFieldInfo {
 }
 
 export const hasChoices = (fieldInfo: IFieldInfo | IFieldInfoWithChoices): fieldInfo is IFieldInfoWithChoices => 
-    fieldInfo.FieldTypeKind in [FieldTypes.Choice, FieldTypes.MultiChoice ] &&
+    [FieldTypes.Choice, FieldTypes.MultiChoice ].includes(fieldInfo.FieldTypeKind) &&
     (fieldInfo as IFieldInfoWithChoices).Choices !== undefined &&
     Array.isArray((fieldInfo as IFieldInfoWithChoices).Choices);
 
@@ -85,15 +85,15 @@ export const isFillInChoice = (fieldInfo: IFieldInfo | IFieldInfoWithFillInChoic
     hasFillInChoice( fieldInfo) && fieldInfo.FillInChoice;
 
 export interface IFieldInfoWithRichtText extends IFieldInfo {
-    RichtText: boolean;
+    RichText: boolean;
 }
 
 export const hasRichtText = (fieldInfo: IFieldInfo | IFieldInfoWithRichtText): fieldInfo is IFieldInfoWithRichtText => 
-    (fieldInfo as IFieldInfoWithRichtText).RichtText !== undefined && 
-    'boolean' === typeof((fieldInfo as IFieldInfoWithRichtText).RichtText);
+    (fieldInfo as IFieldInfoWithRichtText).RichText !== undefined && 
+    'boolean' === typeof((fieldInfo as IFieldInfoWithRichtText).RichText);
 
 export const isRichtText = (fieldInfo: IFieldInfo | IFieldInfoWithRichtText): boolean =>
-    hasRichtText( fieldInfo) && fieldInfo.RichtText;
+    hasRichtText( fieldInfo) && fieldInfo.RichText;
 
 export interface IFieldInfoWithMaximumValue extends IFieldInfo {
     MaximumValue: number;

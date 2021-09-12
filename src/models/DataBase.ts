@@ -59,6 +59,7 @@ export class DataBase implements IDataBase {
         return fullOptions;
     }
 
+    @Exclude()
     private onChange = (change: IObjectDidChange) => {
         if (change.name !== "dirty" && !this.dirty) {
             console.log(

@@ -19,6 +19,10 @@ export abstract class Deleteable extends DataBase implements IDeleteable {
 
     @Exclude()
     abstract readonly canBeDeleted: boolean;
+
+    @Exclude()
     abstract delete: () => Promise<void>;
+
+    @Exclude()
     abstract deleted: boolean;
 }
