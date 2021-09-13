@@ -123,10 +123,10 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             );
 
             return instance;
-        } catch (getItemsError: any) {
+        } catch (getItemsError: unknown) {
             throw new Error(
                 `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].getById(${id}) failed: ${getItemsError.message ?? getItemsError
+                }].getById(${id}) failed: ${(getItemsError as Error).message ?? getItemsError
                 }`
             );
         }
@@ -241,10 +241,10 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             } else {
                 this.list = this.site.sp.web.lists.getByTitle(this.listTitle);
             }
-        } catch (getListError: any) {
+        } catch (getListError: unknown) {
             throw new Error(
                 `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].init(): ${this.listId ? "getById" : "getByTitle"}: ${getListError.message ?? getListError
+                }].init(): ${this.listId ? "getById" : "getByTitle"}: ${(getListError as Error).message ?? getListError
                 }`
             );
         }
@@ -283,10 +283,10 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             for (const info of fieldsInfos) {
                 this._allFields.set(info.InternalName, info);
             }
-        } catch (getFieldsError: any) {
+        } catch (getFieldsError: unknown) {
             throw new Error(
                 `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].getFieldInfos() caught: ${getFieldsError.message ?? getFieldsError
+                }].getFieldInfos() caught: ${(getFieldsError as Error).message ?? getFieldsError
                 }`
             );
         }
@@ -295,10 +295,10 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     private getListInfo = async () => {
         try {
             this.listInfo = await this.list();
-        } catch (getListInfoError: any) {
+        } catch (getListInfoError: unknown) {
             throw new Error(
                 `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].getListInfo(): getList ${getListInfoError.message ?? getListInfoError
+                }].getListInfo(): getList ${(getListInfoError as Error).message ?? getListInfoError
                 }`
             );
         }
@@ -314,10 +314,10 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             this.votingExperience = this.rootFolderProperties[
                 "Ratings_x005f_VotingExperience"
             ] as undefined | "Ratings" | "Likes";
-        } catch (getError: any) {
+        } catch (getError: unknown) {
             throw new Error(
                 `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].getRootFolderProperties(): getList ${getError.message ?? getError
+                }].getRootFolderProperties(): getList ${(getError as Error).message ?? getError
                 }`
             );
         }
@@ -601,9 +601,9 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 ) {
                     return errorMatches[1] + "/" + errorMatches[2];
                 }
-            } catch (parseErrorError: any) {
+            } catch (parseErrorError: unknown) {
                 throw new Error(
-                    `SharePointList.isExpanededFieldError500 JSON parse error: ${parseErrorError.message ?? parseErrorError
+                    `SharePointList.isExpanededFieldError500 JSON parse error: ${(parseErrorError as Error).message ?? parseErrorError
                     }: parsing error: ${error?.message ?? error}`
                 );
             }
@@ -647,9 +647,9 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 ) {
                     return errorMatches[1] + "/" + errorMatches[2];
                 }
-            } catch (parseErrorError: any) {
+            } catch (parseErrorError: unknown) {
                 throw new Error(
-                    `SharePointList.isExpanededFieldError400 JSON parse error: ${parseErrorError.message ?? parseErrorError
+                    `SharePointList.isExpanededFieldError400 JSON parse error: ${(parseErrorError as Error).message ?? parseErrorError
                     }: parsing error: ${error?.message ?? error}`
                 );
             }
@@ -740,9 +740,9 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 }].getAll gotInstances records=${this.records.length}`,
                 { plainItems, records: [...this.records] }
             );
-        } catch (getItemsError: any) {
+        } catch (getItemsError: unknown) {
             let failedExpandedField = undefined;
-            switch (getItemsError["status"]) {
+            switch (getItemsError as Record<string,number>["status"]) {
                 case 404:
                     failedExpandedField = TAX_CATCH_ALL_FIELD + "/Title";
                     break;
@@ -769,7 +769,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             } else {
                 console.error(
                     `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                    }].getAll failed allItmes=${this.records.length}: ${getItemsError.message ?? getItemsError
+                    }].getAll failed allItmes=${this.records.length}: ${(getItemsError as Error).message ?? getItemsError
                     }`,
                     {
                         getItemsError,
@@ -780,7 +780,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 );
                 throw new Error(
                     `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                    }].getAll failed: ${getItemsError.message ?? getItemsError}`
+                    }].getAll failed: ${(getItemsError as Error).message ?? getItemsError}`
                 );
             }
         }
@@ -992,9 +992,9 @@ export const create = async (
 
         controllers.set(url, newController);
         return newController;
-    } catch (initError: any) {
+    } catch (initError: unknown) {
         throw new Error(
-            `SharePointList:create( ${url} ) failed: ${initError.message ?? initError
+            `SharePointList:create( ${url} ) failed: ${(initError as Error).message ?? initError
             }`
         );
     }

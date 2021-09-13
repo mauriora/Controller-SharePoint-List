@@ -1,10 +1,22 @@
 import { Expose } from "class-transformer";
 import { DataBase } from "./DataBase";
 
+export interface MetaTermFields {
+    label: string;
+    termGuid: string;
+    wssId: number;
+}
+
 export class MetaTerm extends DataBase
 {
-    constructor() {
+    constructor(values?: MetaTermFields) {
         super();
+
+        if(values) {
+            this.label = values.label;
+            this.termGuid = values.termGuid;
+            this.wssId = values.wssId;
+        }
     }
     
     @Expose({ name: 'Label'})
