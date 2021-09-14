@@ -27,13 +27,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
         this.records = controller.records;
     }
 
-    public submit = async (newRecord?: DataType): Promise<void> => { 
-        await this.controller.submit(newRecord);
-
-        /** if the parameter newRecord === controller.newRecord,
-         *  then the controller added it to records and created a new newRecord */
-        this.newRecord = this.controller.newRecord;
-    };
+    public submit = async (newRecord?: DataType): Promise<void> => this.controller.submit(newRecord);
 
     /** fields for $select part of the query */
     public get selectFields(): Array<string> {
@@ -87,7 +81,6 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
         this._propertyFields = propertyFields;
     }
 
-    private static IGNORED_PROPERTIES = new Array<string>();
     private static IGNORED_EXPANDS = ['Author', 'Editor', 'Attachments', 'AverageRating', 'RatingCount', 'Ratings', 'LikesCount', 'TaxKeyword' ];
     private static OPTIONAL_FIELDS = ['TaxKeyword', 'TaxCatchAll', 'AverageRating', 'RatingCount', 'RatedBy', 'Ratings', 'LikesCount', 'LikedBy'];
     
@@ -133,7 +126,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
                         const fieldType = fieldInfo?.FieldTypeKind;
 
                         if (undefined === fieldType) {
-                            if (SharePointModel.OPTIONAL_FIELDS.findIndex(prospect => prospect === fieldName) >= 0) {
+                            if (SharePointModel.OPTIONAL_FIELDS.includes(fieldName)) {
                                 console.log(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} ignore`);
                             } else {
                                 throw new Error(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} not found in fields`);

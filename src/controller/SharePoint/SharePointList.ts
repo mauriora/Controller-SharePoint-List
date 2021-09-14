@@ -165,6 +165,9 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             if (this.newRecord === jsRecord) {
                 this.records.push(this.newRecord);
                 this.newRecord = await this.getObject();
+                for(const model of this.models.values()) {
+                    model.newRecord = this.newRecord;
+                }
             }
             console.log(
                 `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
