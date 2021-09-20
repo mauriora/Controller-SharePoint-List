@@ -745,7 +745,8 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             );
         } catch (getItemsError: unknown) {
             let failedExpandedField = undefined;
-            switch (getItemsError as Record<string,number>["status"]) {
+            const status = (getItemsError as Record<string,number>)["status"]
+            switch (status) {
                 case 404:
                     failedExpandedField = TAX_CATCH_ALL_FIELD + "/Title";
                     break;
@@ -772,9 +773,10 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             } else {
                 console.error(
                     `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                    }].getAll failed allItmes=${this.records.length}: ${(getItemsError as Error).message ?? getItemsError
+                    }].getAll failed (${status}) allItmes=${this.records.length}: ${(getItemsError as Error).message ?? getItemsError
                     }`,
                     {
+                        status,
                         getItemsError,
                         factory: this.baseModel.jsFactoryFactory(),
                         selects: this.selectFields,
