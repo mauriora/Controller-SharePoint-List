@@ -31,7 +31,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
 
     /** fields for $select part of the query */
     public get selectFields(): Array<string> {
-        if( undefined === this._selectFields) {
+        if (undefined === this._selectFields) {
             this.initSelectAndExpands();
         }
         return this._selectFields;
@@ -39,7 +39,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
 
     /** fields for $expand part of the query */
     public get expandFields(): Array<string> {
-        if( undefined === this._expandFields) {
+        if (undefined === this._expandFields) {
             this.initSelectAndExpands();
         }
         return this._expandFields;
@@ -47,7 +47,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
 
     /** Property name mapped to SharePoint Fieldinfo  */
     public get propertyFields(): Map<keyof WritablePart<DataType>, IFieldInfo> {
-        if( undefined === this._propertyFields) {
+        if (undefined === this._propertyFields) {
             this.initSelectAndExpands();
         }
         return this._propertyFields;
@@ -55,7 +55,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
 
     /** Property name mapped to SharePoint Fieldinfo  */
     public get selectedFields(): Map<string, IFieldInfo> {
-        if( undefined === this._propertyFields) {
+        if (undefined === this._propertyFields) {
             this.initSelectAndExpands();
         }
         return this._selectedFields;
@@ -81,9 +81,9 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
         this._propertyFields = propertyFields;
     }
 
-    private static IGNORED_EXPANDS = ['Author', 'Editor', 'Attachments', 'AverageRating', 'RatingCount', 'Ratings', 'LikesCount', 'TaxKeyword' ];
+    private static IGNORED_SUB_EXPANDS = ['Author', 'Editor', 'Attachments', 'AverageRating', 'RatingCount', 'Ratings', 'LikesCount', 'TaxKeyword', 'TaxCatchAll', 'RatedBy', 'LikedBy'];
     private static OPTIONAL_FIELDS = ['TaxKeyword', 'TaxCatchAll', 'AverageRating', 'RatingCount', 'RatedBy', 'Ratings', 'LikesCount', 'LikedBy'];
-    
+
     /**
      * Adds the fieldName to expandedFields and adds each expansion as fieldName/expansion to selectFields
      * @param fieldName e.g. author
@@ -105,64 +105,54 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
         const selectedFields = undefined === fields ? undefined : new Map<string, IFieldInfo>();
         const propertyFields = undefined === fields ? undefined : new Map<keyof WritablePart<DataType>, IFieldInfo>();
 
-        console.log(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name})`, defaultMetadataStorage)
-
         const exposedMetadatas = defaultMetadataStorage.getExposedMetadatas(jsFactory)
 
         // for (const propertyName in blankJs) {
         for (const exposeData of exposedMetadatas) {
-                const propertyName = exposeData.propertyName;
-                const excludeData = defaultMetadataStorage.findExcludeMetadata(jsFactory, propertyName);
+            const propertyName = exposeData.propertyName as keyof WritablePart<DataType>;
+            const excludeData = defaultMetadataStorage.findExcludeMetadata(jsFactory, propertyName);
 
-                if (undefined !== excludeData) {
-                    // console.debug(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}) exclude ${propertyName}`, { blankJs, excludeData });
-                } else {
-                    const typeData = defaultMetadataStorage.findTypeMetadata(jsFactory, propertyName);
-                    const exposeData = defaultMetadataStorage.findExposeMetadata(jsFactory, propertyName);
-                    const fieldName = exposeData?.options?.name ?? propertyName;
+            if (undefined === excludeData) {
+                const typeData = defaultMetadataStorage.findTypeMetadata(jsFactory, propertyName);
+                const fieldName = exposeData?.options?.name ?? propertyName;
 
-                    if (undefined !== fields) {
-                        const fieldInfo = fields.get(fieldName);
-                        const fieldType = fieldInfo?.FieldTypeKind;
+                if (undefined !== fields) {
+                    const fieldInfo = fields.get(fieldName);
+                    const fieldType = fieldInfo?.FieldTypeKind;
 
-                        if (undefined === fieldType) {
-                            if (SharePointModel.OPTIONAL_FIELDS.includes(fieldName)) {
-                                console.log(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} ignore`);
-                            } else {
-                                throw new Error(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} not found in fields`);
-                            }
-                        } else if ([FieldTypes.Lookup, FieldTypes.User].includes(fieldType)) {
-                            if (undefined !== typeData) {
-                                const lookUpFields = this.getSelectAndExpand(typeData.typeFunction() as ListItemBaseConstructor<DataType>);
-
-                                SharePointModel.addExpandField(selects, expands, fieldName, lookUpFields.selects);
-                                selectedFields.set(fieldName, fieldInfo);
-                                propertyFields.set(propertyName as keyof WritablePart<DataType>, fieldInfo);
-                            } else {
-                                throw new Error(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName}[${fieldInfo.TypeAsString}] no type info`);
-                                // selects.push(fieldName);
-                            }
-                        } else if (fieldType === FieldTypes.Attachments && (true !== this.controller.listInfo.EnableAttachments)) {
-                            console.warn(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} ignore, attachments are disabled`, { blankJs, exposeData, typeData, excludeData, selects, expands, listInfo: this?.controller?.listInfo, fieldInfo });
+                    if (undefined === fieldType) {
+                        if (SharePointModel.OPTIONAL_FIELDS.includes(fieldName)) {
+                            // console.debug(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} ignore optional (not found in fields)`);
                         } else {
-                            selects.push(fieldName);
+                            throw new Error(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} not found in fields`);
+                        }
+                    } else if ([FieldTypes.Lookup, FieldTypes.User].includes(fieldType)) {
+                        if (undefined !== typeData) {
+                            const lookUpFields = this.getSelectAndExpand(typeData.typeFunction() as ListItemBaseConstructor<DataType>);
+
+                            SharePointModel.addExpandField(selects, expands, fieldName, lookUpFields.selects);
                             selectedFields.set(fieldName, fieldInfo);
-                            propertyFields.set(propertyName as keyof WritablePart<DataType>, fieldInfo);
+                            propertyFields.set(propertyName, fieldInfo);
+                        } else {
+                            throw new Error(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName}[${fieldInfo.TypeAsString}] no type info`);
+                            // selects.push(fieldName);
                         }
-                    } else { // (undefined === fields)
-                        if ( SharePointModel.IGNORED_EXPANDS.findIndex(prospect => prospect === fieldName) >= 0  ) {
-                            console.warn(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} Ignore Expansion`, { blankJs, exposeData, typeData, excludeData, selects, expands });
-                        } else if (undefined !== typeData) {
-                            // const lookUpFields = this.getSelectAndExpand(typeData.typeFunction());
-                            // SharePointModel.addExpandField( selects, expands, fieldName, lookUpFields.selects );
-                            console.warn(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} Ignore Sub Expansion`, { blankJs, exposeData, typeData, excludeData, selects, expands });
-                        } else { // if (true || ['ID', 'Title'].find(prospect => prospect === fieldName)) {
-                            // console.warn(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName}[] add to select`, { exposeData, typeData, excludeData, });
-                            selects.push(fieldName);
-                        // } else {
-                        //     console.warn(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName}[] NOT add to select`, { exposeData, typeData, excludeData, });
-                        }
+                    } else if (fieldType === FieldTypes.Attachments && (true !== this.controller.listInfo.EnableAttachments)) {
+                        // console.debug(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} ignore, attachments are disabled`, { blankJs, exposeData, typeData, excludeData, selects, expands, listInfo: this?.controller?.listInfo, fieldInfo });
+                    } else {
+                        selects.push(fieldName);
+                        selectedFields.set(fieldName, fieldInfo);
+                        propertyFields.set(propertyName, fieldInfo);
                     }
+                } else { // (undefined === fields) => child list
+                    if (SharePointModel.IGNORED_SUB_EXPANDS.includes(fieldName)) {
+                        // console.warn(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} Ignore predefined sub Expansion`, { blankJs, exposeData, typeData, excludeData, selects, expands });
+                    } else if (undefined !== typeData) {
+                        console.warn(`SharePointModel[${this?.controller?.listInfo?.Title ?? this?.controller?.listId ?? this?.controller?.listTitle}].getSelectAndExpand(${jsFactory.name}).${propertyName} => ${fieldName} Ignore unkown Sub Expansion. If you want to access this property, then you need to create a controller for it.`, { blankJs, exposeData, typeData, excludeData, selects, expands });
+                    } else {
+                        selects.push(fieldName);
+                    }
+                }
             }
         }
         return { selects, expands, selectedFields, propertyFields };

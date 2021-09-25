@@ -11,10 +11,27 @@ export interface ResultsArray {
     [key: string]: { results?: [] } | [];
 }
 
+/**
+ * Deletes all properties with a value null.
+ * Used as preparation for plainToClass when retrieving SharePoint items.
+ * This ensures that the target class default values are used, e.g. an empty array and not set values are actually undefined.
+ * @param item, e.g. {a: 1, b: [], c: null}
+ * @returns the item without properties that were null, e.g.: {a: 1, b:[]}
+ */
+export const removeNullValues = (item: Record<string, null | unknown>): Record<string, unknown> => {
+    for(const property in item) {
+        if(null === item[property]) {
+            delete item[property];
+        }
+    }
+    return item;
+}
+
 export const resultArrayToArray = (plain: ResultsArray, selectedFields: Map<string, IFieldInfo>): void => {
     for (const [fieldName, info] of selectedFields.entries()) {
         const fieldValue = plain[fieldName];
         if (allowsMultipleValues(info) && fieldValue && 'results' in fieldValue) {
+            console.debug(`resultArrayToArray[${fieldName}]`, { fieldValue });
             plain[fieldName] = fieldValue.results;
         }
     }
@@ -32,7 +49,9 @@ export const setNullArrays = <ItemType extends ListItemBase>(item: ItemType, pro
             const sourceValue = source?.[info.InternalName];
             if (!item[propertyName] || (sourceValue && '__deferred' in sourceValue)) {
                 if (sourceValue && '__deferred' in sourceValue) {
-                    console.warn(`setNullArrays .${propertyName} don't know what to do with deferred, set ${propertyName}=empty array !!`, { item, propertyName });
+                    console.warn(`setNullArrays .${propertyName} don't know what to do with deferred, set ${propertyName}=empty array !!`, { itemNow: {...item}, item, propertyName });
+                } else {
+                    console.error(`setNullArrays .${propertyName} arrays should be initialised, setting ${propertyName}=[] !!`, { itemNow: {...item}, item, propertyName });
                 }
                 (item[propertyName] as unknown) = [];
             }
@@ -135,7 +154,6 @@ const toTaxonomyFieldType = (submitRecord: TaxonomySubmitRecord, propertyName: s
 
 export const toSubmit = async (jsRecord: ListItemBase, selectedFields: Map<string, IFieldInfo>, allFields: Map<string, IFieldInfo>): Promise<Record<string, unknown>> => {
     const submitRecord = classToPlain(jsRecord, { excludeExtraneousValues: true });
-    console.debug(`[${jsRecord.id}].toSubmit()`, { jsRecord: { ...jsRecord }, submitRecord: { ...submitRecord } });
 
     for (const propertyName in submitRecord) {
         const propertyValue = submitRecord[propertyName];

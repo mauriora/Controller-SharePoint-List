@@ -17,11 +17,12 @@ import { UserLookup } from "../../models/User";
 import {
     DeferredContainer,
     fixSingleTaxonomyFields,
+    removeNullValues,
     resultArrayToArray,
     setNullArrays,
     toSubmit,
 } from "./Transformer";
-import { plainToClass, plainToClassFromExist } from "class-transformer";
+import { ClassTransformOptions, plainToClass, plainToClassFromExist } from "class-transformer";
 import { ODataError } from "../../models/OData/Error";
 import { DataError } from "../../models/DataError";
 import { allowsMultipleValues, getLookupList } from "./FieldInfo";
@@ -110,9 +111,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             const instance = await this.getObject(plain);
             this.records.push(instance);
 
-            console.debug(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].gotById(${id}) records=${this.records.length}`,
+            console.debug( `SharePointList[${this.getName()}].gotById(${id}) records=${this.records.length}`,
                 {
                     instance,
                     plain,
@@ -124,11 +123,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
 
             return instance;
         } catch (getItemsError: unknown) {
-            throw new Error(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].getById(${id}) failed: ${(getItemsError as Error).message ?? getItemsError
-                }`
-            );
+            throw new Error(`SharePointList[${this.getName()}].getById(${id}) failed: ${(getItemsError as Error).message ?? getItemsError}`);
         }
     };
 
@@ -150,17 +145,13 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         if (undefined !== submitRecord.ID && 0 < submitRecord.ID) {
             const updateResponse = await jsRecord.pnpItem.update(submitRecord);
             // submitResponse = await this.list.items.getById(submitRecord.ID).update(submitRecord);
-            console.log(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].submit() update response.data.odata.etag=${updateResponse.data["odata.etag"]
-                }`,
+            console.log(`SharePointList[${this.getName()}].submit() update response.data.odata.etag=${updateResponse.data["odata.etag"]}`,
                 { jsRecord, submitRecord, updateResponse }
             );
         } else {
             const createResponse = await this.list.items.add(submitRecord);
             const newID = createResponse.data.ID;
             jsRecord = await this.getObject(createResponse.data, jsRecord);
-            // jsRecord = plainToClassFromExist(jsRecord, createResponse.data);
 
             if (this.newRecord === jsRecord) {
                 this.records.push(this.newRecord);
@@ -169,11 +160,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                     model.newRecord = this.newRecord;
                 }
             }
-            console.log(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].submit() add response=${newID}`,
-                { jsRecord, submitRecord, createResponse }
-            );
+            console.log( `SharePointList[${this.getName()}].submit() add response=${newID}`, { jsRecord, submitRecord, createResponse } );
         }
         jsRecord.dirty = false;
     };
@@ -222,7 +209,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     public get allFields(): Map<string, IFieldInfo> {
         if (0 === this._allFields.size) {
             throw new Error(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
+                `SharePointList[${this.getName()
                 }].get allFields() not fields. Call getFieldInfos first`
             );
         }
@@ -246,7 +233,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             }
         } catch (getListError: unknown) {
             throw new Error(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
+                `SharePointList[${this.getName()
                 }].init(): ${this.listId ? "getById" : "getByTitle"}: ${(getListError as Error).message ?? getListError
                 }`
             );
@@ -262,9 +249,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
 
         this.initialised = true;
 
-        console.log(
-            `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-            }].init() done voting=${this.votingExperience}`,
+        console.log( `SharePointList[${this.getName() }].init() done voting=${this.votingExperience}`,
             {
                 site: this.site,
                 listId: this.listId,
@@ -288,7 +273,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             }
         } catch (getFieldsError: unknown) {
             throw new Error(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
+                `SharePointList[${this.getName()
                 }].getFieldInfos() caught: ${(getFieldsError as Error).message ?? getFieldsError
                 }`
             );
@@ -300,9 +285,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             this.listInfo = await this.list();
         } catch (getListInfoError: unknown) {
             throw new Error(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].getListInfo(): getList ${(getListInfoError as Error).message ?? getListInfoError
-                }`
+                `SharePointList[${this.getName()}].getListInfo(): getList ${(getListInfoError as Error).message ?? getListInfoError}`
             );
         }
     };
@@ -314,14 +297,10 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         try {
             this.rootFolderProperties =
                 await this.list.rootFolder.properties.get();
-            this.votingExperience = this.rootFolderProperties[
-                "Ratings_x005f_VotingExperience"
-            ] as undefined | "Ratings" | "Likes";
+            this.votingExperience = this.rootFolderProperties["Ratings_x005f_VotingExperience"] as undefined | "Ratings" | "Likes";
         } catch (getError: unknown) {
             throw new Error(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].getRootFolderProperties(): getList ${(getError as Error).message ?? getError
-                }`
+                `SharePointList[${this.getName()}].getRootFolderProperties(): getList ${(getError as Error).message ?? getError}`
             );
         }
     };
@@ -341,18 +320,13 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     /** Propertyname mapped to Sharepoint fieldInfos */
     private propertyFields = new Map<keyof DataType, IFieldInfo>();
 
-    private models = new Map<
-        ListItemBaseConstructor,
-        SharePointModel<DataType>
-    >();
+    private models = new Map<ListItemBaseConstructor, SharePointModel<DataType>>();
 
     /**
      * Add the model to selectFields, selectedFields, expandFields and possible set as baseModel
      * @param model to merge in this
      */
-    private addModelSelectAndExpand = async (
-        model: SharePointModel<DataType>
-    ) => {
+    private addModelSelectAndExpand = async ( model: SharePointModel<DataType> ) => {
         for (const selectField of model.selectFields) {
             this.selectFields.add(selectField);
         }
@@ -370,8 +344,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             this.baseModel.selectFields.length < model.selectFields.length
         ) {
             console.debug(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].addModelSelectAndExpand() set baseModel`,
+                `SharePointList[${this.getName()}].addModelSelectAndExpand() set baseModel: ${model.jsFactory.name}`,
                 { model, controller: this }
             );
             this.baseModel = model;
@@ -379,19 +352,15 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         }
     };
 
+    private getName = () => this?.listInfo?.Title ?? this.listId ?? this.listTitle;
+
     async addModel<ModelType extends DataType>(
         jsFactory: ListItemBaseConstructor<ModelType>,
         filter: string
     ): Promise<SharePointModel<ModelType>> {
-        const existing = this.models.get(
-            jsFactory
-        ) as unknown as SharePointModel<ModelType>;
+        const existing = this.models.get( jsFactory ) as unknown as SharePointModel<ModelType>;
 
-        console.debug(
-            `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-            }].addModel()`,
-            { existing }
-        );
+        console.debug( `SharePointList[${this.getName()}].addModel()`, { existing } );
 
         if (existing) {
             return existing;
@@ -417,10 +386,58 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         return newModel;
     }
 
+    private static EXPANDABLE_FIELD_TYPES: FieldTypes[]  = [ FieldTypes.Number, FieldTypes.Text, FieldTypes.DateTime ];
+
     /**
      * Maps propertyname to { Lookup list Id, loadLookupController, thisFieldName }
      */
     private lookupMappings = new Map<keyof DataType, LookupFieldMapping>();
+
+    private static isExpandableField = (field: IFieldInfo) =>
+        allowsMultipleValues(field) || SharePointList.EXPANDABLE_FIELD_TYPES.includes( field.FieldTypeKind );
+
+    private static isNotExpandable = (lookupController: SharePointList): boolean => 
+        Array.from( lookupController.selectedFields.values() )
+        .some( field => ! SharePointList.isExpandableField( field ) );
+
+    /**
+     * Change the $select to only include lookup information (ID + (Title or Term)) 
+     * The caller needs to call lookupController.startLoadPartials
+     * @param fieldName the internal/static fieldname (not property name)
+    */
+    private changeExpandToLookup = (fieldName: string) => {
+        // Remove all expansions of the fieldname
+        const filteredSelects = Array.from(this.selectFields.values()).filter(
+            selectField => !selectField.startsWith(fieldName + "/")
+        );
+        const removedSomething = filteredSelects.length !== this.selectFields.size;
+        // Add required lookup expansion
+        filteredSelects.push(
+            ...(TAX_CATCH_ALL_FIELD === fieldName
+                ? [fieldName + "/Term", fieldName + "/ID"]
+                : [fieldName + "/Title", fieldName + "/ID"])
+        );
+
+        if (removedSomething) {
+            console.log(
+                `SharePointList[${this.getName()}].changeExpandToLookup removed ${this.selectFields.size - filteredSelects.length} because of field ${fieldName}`,
+                {
+                    previousSelectFields: [...this.selectFields],
+                    newSelectFields: [...filteredSelects]
+                }    
+            );
+            this.selectFields.clear();
+            filteredSelects.forEach(filteredSelect =>
+                this.selectFields.add(filteredSelect)
+            );
+        } else {
+            throw new Error(
+                `SharePointList[${this.getName()}].changeExpandToLookup FAILED to remove ${fieldName} from [${Array.from(
+                    this.selectFields.values()
+                ).join(", ")}]`
+            );
+        }
+    }
 
     private createRequiredChildController = async () => {
         for (const [property, info] of this.propertyFields.entries()) {
@@ -433,24 +450,14 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
 
                             if (false === lookUpListId) {
                                 throw new Error(
-                                    `SharePointList[${this?.listInfo?.Title ??
-                                    this.listId ??
-                                    this.listTitle
-                                    }].createRequiredChildController no LookupList (ID) for ${property} of type ${info.TypeAsString
-                                    }[${info.FieldTypeKind}]`
+                                    `SharePointList[${this.getName()}].createRequiredChildController no LookupList (ID) for ${property} of type ${info.TypeAsString}[${info.FieldTypeKind}]`
                                 );
                             } else if (!this.lookupMappings.has(property)) {
-                                let lookupController = getById(
-                                    lookUpListId,
-                                    false
-                                );
+                                let lookupController = getById( lookUpListId, false );
 
                                 if (undefined === lookupController) {
                                     console.log(
-                                        `SharePointList[${this?.listInfo?.Title ??
-                                        this.listId ??
-                                        this.listTitle
-                                        }].createRequiredChildController create LookupList[${lookUpListId}] for ${property}`,
+                                        `SharePointList[${this.getName()}].createRequiredChildController create LookupList[${lookUpListId}] for ${property}`,
                                         { info }
                                     );
                                     lookupController = await getCreate(
@@ -459,13 +466,6 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                                     );
                                     lookupController.init();
                                 }
-                                this.lookupMappings.set(property, {
-                                    listId: lookUpListId,
-                                    loadLookupController: false,
-                                    thisFieldName: info.InternalName,
-                                    controller: lookupController,
-                                });
-
                                 // Add Lookup models of all registered models
                                 for (const model of this.models.values()) {
                                     this.addLookupModeltoController(
@@ -474,14 +474,29 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                                         lookupController
                                     );
                                 }
+
+                                const isNotExpandable = lookupController.autoLoadPartials || SharePointList.isNotExpandable( lookupController );
+
+                                console.log(
+                                    `SharePointList[${this.getName()}].createRequiredChildController()[${property}] isNotExpandable=${isNotExpandable}`,
+                                    { info, lookupController }
+                                );
+                                if(isNotExpandable) {
+                                    lookupController.startLoadPartials();
+                                    this.changeExpandToLookup(info.InternalName);
+                                }
+                                this.lookupMappings.set(property, {
+                                    listId: lookUpListId,
+                                    loadLookupController: isNotExpandable,
+                                    thisFieldName: info.InternalName,
+                                    controller: lookupController,
+                                });
                             }
                         }
                         break;
                 }
             } else {
-                throw new Error(
-                    `Can only have string members not ${typeof property}`
-                );
+                throw new Error( `Can only have string members not ${typeof property}` );
             }
         }
     };
@@ -496,17 +511,10 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             property
         );
 
-        if (
-            !lookupController.models.has(
-                typeData.typeFunction() as ListItemBaseConstructor
-            )
-        ) {
-            lookupController.addModel(
-                typeData.typeFunction() as ListItemBaseConstructor,
-                ""
-            );
-        } else {
-            // console.log(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].addLookupModeltoController for ${property} model already exist`, { model, lookupController });
+        const lookupFactory = typeData.typeFunction() as ListItemBaseConstructor;
+
+        if ( !lookupController.models.has( lookupFactory ) ) {
+            lookupController.addModel( lookupFactory, "" );
         }
     }
 
@@ -525,7 +533,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             item.setController(this as unknown as SharePointList);
         } else {
             console.error(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
+                `SharePointList[${this.getName()
                 }].addGetPartial item has no setController`,
                 { item, controller: this }
             );
@@ -643,9 +651,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                     { error, odataError, errorMatches }
                 );
 
-                if (
-                    odataError?.["odata.error"]?.code ===
-                    "-1, Microsoft.SharePoint.SPException" &&
+                if ( odataError?.["odata.error"]?.code === "-1, Microsoft.SharePoint.SPException" &&
                     errorMatches.length >= 2
                 ) {
                     return errorMatches[1] + "/" + errorMatches[2];
@@ -657,9 +663,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 );
             }
         } else {
-            console.debug("SharePointList.isExpanededFieldError400 no match", {
-                error,
-            });
+            console.debug("SharePointList.isExpanededFieldError400 no match", { error });
         }
         return undefined;
     };
@@ -669,60 +673,19 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             0,
             expandedField.indexOf("/")
         );
-        const filteredSelects = Array.from(this.selectFields.values()).filter(
-            selectField => !selectField.startsWith(fieldName + "/")
-        );
-        filteredSelects.push(
-            ...(TAX_CATCH_ALL_FIELD === fieldName
-                ? [fieldName + "/Term", fieldName + "/ID"]
-                : [fieldName + "/Title", fieldName + "/ID"])
+        this.changeExpandToLookup(fieldName);
+        const [, mapping] = Array.from(this.lookupMappings.entries() ?? []).find(
+            ([, mProspect]) => mProspect.thisFieldName === fieldName
         );
 
-        if (filteredSelects.length !== this.selectFields.size) {
-            console.warn(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].handleFailedExpand removed ${this.selectFields.size - filteredSelects.length
-                } because of field ${fieldName}.${expandedField}, load LookUp controller`,
-                {
-                    selectFields: [...this.selectFields],
-                    filteredSelects: [...filteredSelects],
-                    lookupMappings: this.lookupMappings,
-                    lookupMappingsCount: this.lookupMappings.size,
-                    lookupMappingsArray: Array.from(
-                        this.lookupMappings.entries()
-                    ),
-                }
-            );
-            this.selectFields.clear();
-            filteredSelects.forEach(filteredSelect =>
-                this.selectFields.add(filteredSelect)
-            );
-            const [, mapping] = Array.from(this.lookupMappings.entries()).find(
-                ([, mProspect]) => mProspect.thisFieldName === fieldName
-            );
-
-            if (undefined === mapping) {
-                throw new Error(
-                    `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                    }].handleFailedExpand can't find mapping for expandedField ${fieldName}`
-                );
-            } else if (mapping.loadLookupController === true) {
-                console.warn(
-                    `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                    }].handleFailedExpand already loading lookup`
-                );
-            } else {
-                mapping.loadLookupController = true;
-                const controller = getById(mapping.listId) as SharePointList;
-                controller.startLoadPartials();
-            }
+        if (undefined === mapping) {
+            throw new Error(`SharePointList[${this.getName()}].handleFailedExpand can't find mapping for expandedField ${fieldName}`);
+        } else if (mapping.loadLookupController === true) {
+            console.warn( `SharePointList[${this.getName()}].handleFailedExpand already loading lookup`);
         } else {
-            throw new Error(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].handleFailedExpand FAILED to remove ${expandedField} from [${Array.from(
-                    this.selectFields.values()
-                ).join(", ")}]`
-            );
+            mapping.loadLookupController = true;
+            const controller = getById(mapping.listId) as SharePointList;
+            controller.startLoadPartials();
         }
     };
 
@@ -739,8 +702,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 this.records.push(instance);
             }
             console.debug(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].getAll gotInstances records=${this.records.length}`,
+                `SharePointList[${this.getName()}].getAll gotInstances records=${this.records.length}`,
                 { plainItems, records: [...this.records] }
             );
         } catch (getItemsError: unknown) {
@@ -758,10 +720,42 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                     break;
             }
             if (undefined !== failedExpandedField) {
+                switch (status) {
+                    case 404:
+                        failedExpandedField = TAX_CATCH_ALL_FIELD + "/Title";
+                        break;
+                    case 400:
+                        console.error(
+                            `SharePointList[${this.getName()}].loadAllRecords() failed because of expanding ${failedExpandedField}, this should not happen anymore. Please report and then ignore this error`,
+                            {
+                                selectFields: [...this.selectFields],
+                                lookupMappings: this.lookupMappings,
+                                lookupMappingsCount: this.lookupMappings.size,
+                                lookupMappingsArray: Array.from(
+                                    this.lookupMappings.entries()
+                                ),
+                            }
+                        );
+                        break;
+                    case 500:
+                        console.warn(
+                            `SharePointList[${this.getName()}].loadAllRecords() failed because of expanding ${failedExpandedField}, this is because the field doesn't contain a value. Getting these lookup items directly now, (instead of expand)`,
+                            {
+                                selectFields: [...this.selectFields],
+                                lookupMappings: this.lookupMappings,
+                                lookupMappingsCount: this.lookupMappings.size,
+                                lookupMappingsArray: Array.from(
+                                    this.lookupMappings.entries()
+                                ),
+                            }
+                        );
+                        failedExpandedField = SharePointList.isExpanededFieldError500(getItemsError);
+                        break;
+                }
                 this.handleFailedExpand(failedExpandedField);
-                // console.warn(`SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle}].getAll removing ${failedExpandedField}`, {getItemsError, failedExpandedField, selectFields: [...this.selectFields]});
+                // console.warn(`SharePointList[${this.getName()}].getAll removing ${failedExpandedField}`, {getItemsError, failedExpandedField, selectFields: [...this.selectFields]});
                 console.warn(
-                    `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
+                    `SharePointList[${this.getName()
                     }].getAll removed ${failedExpandedField} and try again`,
                     {
                         getItemsError,
@@ -772,9 +766,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 await this.loadAllRecords(filter);
             } else {
                 console.error(
-                    `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                    }].getAll failed (${status}) allItmes=${this.records.length}: ${(getItemsError as Error).message ?? getItemsError
-                    }`,
+                    `SharePointList[${this.getName()}].getAll failed (${status}) allItmes=${this.records.length}: ${(getItemsError as Error).message ?? getItemsError}`,
                     {
                         status,
                         getItemsError,
@@ -784,8 +776,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                     }
                 );
                 throw new Error(
-                    `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                    }].getAll failed: ${(getItemsError as Error).message ?? getItemsError}`
+                    `SharePointList[${this.getName()}].getAll failed: ${(getItemsError as Error).message ?? getItemsError}`
                 );
             }
         }
@@ -813,32 +804,27 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
      * @param existing instance to fill and initialise
      * @returns the existing instance or a new object created from plain or the factory.
      * Checks that arrays are created.
-     * If filled with values from plain, connectsLookup and fixes single Taxonom fields.
+     * If filled with values from plain, connectsLookup and fixes single Taxonomy fields.
      * Connect pnpItem, calls instance.init() and removes it from records when deleted
      */
-    private getObject = async (
-        plain?: Record<string, unknown>,
-        existing?: Partial<DataType> & ListItemBase
-    ): Promise<DataType> => {
+    private getObject = async ( plain?: Record<string, unknown>, existing?: Partial<DataType> & ListItemBase ): Promise<DataType> => {
         if (plain) {
-            console.warn(
-                `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                }].getObject(${plain.ID}) resultArrayToArray`,
-                { plainNow: { ...plain }, plain }
-            );
-
             resultArrayToArray(plain, this.selectedFields);
         }
-        const instance = plain
-            ? existing
-                ? (plainToClassFromExist(existing, plain, {
-                    excludeExtraneousValues: true,
-                }) as DataType)
-                : plainToClass(this.baseModel.jsFactoryFactory(), plain, {
-                    excludeExtraneousValues: true,
-                })
-            : (existing as DataType) ??
-            new (this.baseModel.jsFactoryFactory())();
+        let instance: DataType = undefined;
+        
+        if(plain) {
+            const transformOptions: ClassTransformOptions = { excludeExtraneousValues: true, exposeDefaultValues: true };
+            removeNullValues(plain);
+
+            if(existing) {
+                instance = plainToClassFromExist(existing, plain, transformOptions) as DataType;
+            } else {
+                instance = plainToClass(this.baseModel.jsFactoryFactory(), plain, transformOptions );
+            }
+        } else {
+            instance = (existing as DataType) ?? new (this.baseModel.jsFactoryFactory())();
+        }
 
         instance.source = plain;
 
@@ -853,23 +839,13 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         }
         if (instance.id) {
             if (instance.pnpItem) {
-                console.warn(
-                    `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-                    }].getObject(${instance.id
-                    }) instance.pnpItem already set - setting again`
-                );
+                console.warn( `SharePointList[${this.getName()}].getObject(${instance.id}) instance.pnpItem already set - setting again`);
             }
             instance.pnpItem = this.list.items.getById(instance.id);
         }
         instance.init();
 
         when(() => instance.deleted).then(() => this.removeItem(instance));
-
-        console.log(
-            `SharePointList[${this?.listInfo?.Title ?? this.listId ?? this.listTitle
-            }].getObject(${instance.id})`,
-            { plain, existing, instance }
-        );
         return instance;
     };
 

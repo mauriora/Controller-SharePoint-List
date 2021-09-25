@@ -62,17 +62,11 @@ export class DataBase implements IDataBase {
     @Exclude()
     private onChange = (change: IObjectDidChange) => {
         if (change.name !== "dirty" && !this.dirty) {
-            console.log(
-                `DataBase[${this.constructor.name}].onChange(${String(
-                    change.name
-                )}) set dirty`
-            );
+            console.log( `DataBase[${this.constructor.name}].onChange(${String(change.name)}) set dirty`);
             this.dirty = true;
         }
         if (change.name === "dirty" && !this.dirty) {
-            console.log(
-                `DataBase[${this.constructor.name}].onChange (not dirty)`
-            );
+            console.log( `DataBase[${this.constructor.name}].onChange(${String(change.name)}) (not dirty)` );
         }
     };
 
@@ -107,10 +101,7 @@ export class DataBase implements IDataBase {
                     observableProperties[property] = observable;
                 }
             }
-            console.debug(
-                `DataBase[${this.constructor.name}].init() makeObservable`,
-                { observableProperties, options, meNow: { ...this }, me: this }
-            );
+
             makeObservable(this, observableProperties);
             observe(this, this.onChange);
         }

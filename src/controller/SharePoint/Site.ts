@@ -32,7 +32,7 @@ export const getDefaultSite = (): SiteInfo => {
      const defaultSite = sites.get('');
  
      if (undefined === defaultSite) {
-         throw new Error(`Default Site has not been set, call SharePointList.init from WebPart.onInit with this.context as parameter.`);
+         throw new Error(`Default Site has not been set, in your WebPart.onInit call 'init( this.context )'`);
      }
      return defaultSite;
  };
