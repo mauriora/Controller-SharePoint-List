@@ -101,17 +101,31 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     public getByIdSync = (id: number): DataType | undefined =>
         this.records.find(item => item.id === id);
 
+
+    private addToRecords = (item: DataType) => {
+        if(this.records.includes(item) ) {
+            throw new Error(`SharePointList[${this.getName()}].addToRecords(id= ${item?.id}) already includes item`);
+        } else if (this.records.some(prospect => item.id === prospect.id)) {
+            throw new Error(`SharePointList[${this.getName()}].addToRecords(id= ${item?.id}) different instance with same id already exists`);
+        }
+        this.records.push(item);
+        when(() => item.deleted).then(() => this.removeItem(item));
+    }
+
+
     public getById = async (id: number): Promise<DataType> => {
         const local = this.getByIdSync(id);
         if (undefined !== local) return local;
 
         try {
             const plain = await this.getPlainById(id);
+            const existing = this.getRecord(id);
+            const instance = await this.getObject(plain, existing);
 
-            const instance = await this.getObject(plain);
-            this.records.push(instance);
-
-            console.debug( `SharePointList[${this.getName()}].gotById(${id}) records=${this.records.length}`,
+            if (!existing) {
+                this.addToRecords(instance);
+            }
+            console.debug(`SharePointList[${this.getName()}].gotById(${id}) records=${this.records.length}`,
                 {
                     instance,
                     plain,
@@ -142,9 +156,9 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             this.allFields
         );
 
-        if (undefined !== submitRecord.ID && 0 < submitRecord.ID) {
+        if (submitRecord.ID && submitRecord.ID > 0 ) {
             const updateResponse = await jsRecord.pnpItem.update(submitRecord);
-            // submitResponse = await this.list.items.getById(submitRecord.ID).update(submitRecord);
+
             console.log(`SharePointList[${this.getName()}].submit() update response.data.odata.etag=${updateResponse.data["odata.etag"]}`,
                 { jsRecord, submitRecord, updateResponse }
             );
@@ -152,15 +166,14 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             const createResponse = await this.list.items.add(submitRecord);
             const newID = createResponse.data.ID;
             jsRecord = await this.getObject(createResponse.data, jsRecord);
+            this.addToRecords(jsRecord);
 
             if (this.newRecord === jsRecord) {
-                this.records.push(this.newRecord);
-                this.newRecord = await this.getObject();
-                for(const model of this.models.values()) {
+                for (const model of this.models.values()) {
                     model.newRecord = this.newRecord;
                 }
             }
-            console.log( `SharePointList[${this.getName()}].submit() add response=${newID}`, { jsRecord, submitRecord, createResponse } );
+            console.log(`SharePointList[${this.getName()}].submit() add response=${newID}`, { jsRecord, submitRecord, createResponse });
         }
         jsRecord.dirty = false;
     };
@@ -249,7 +262,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
 
         this.initialised = true;
 
-        console.log( `SharePointList[${this.getName() }].init() done voting=${this.votingExperience}`,
+        console.log(`SharePointList[${this.getName()}].init() done voting=${this.votingExperience}`,
             {
                 site: this.site,
                 listId: this.listId,
@@ -326,7 +339,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
      * Add the model to selectFields, selectedFields, expandFields and possible set as baseModel
      * @param model to merge in this
      */
-    private addModelSelectAndExpand = async ( model: SharePointModel<DataType> ) => {
+    private addModelSelectAndExpand = async (model: SharePointModel<DataType>) => {
         for (const selectField of model.selectFields) {
             this.selectFields.add(selectField);
         }
@@ -358,9 +371,9 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         jsFactory: ListItemBaseConstructor<ModelType>,
         filter: string
     ): Promise<SharePointModel<ModelType>> {
-        const existing = this.models.get( jsFactory ) as unknown as SharePointModel<ModelType>;
+        const existing = this.models.get(jsFactory) as unknown as SharePointModel<ModelType>;
 
-        console.debug( `SharePointList[${this.getName()}].addModel()`, { existing } );
+        console.debug(`SharePointList[${this.getName()}].addModel()`, { existing });
 
         if (existing) {
             return existing;
@@ -386,7 +399,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         return newModel;
     }
 
-    private static EXPANDABLE_FIELD_TYPES: FieldTypes[]  = [ FieldTypes.Number, FieldTypes.Text, FieldTypes.DateTime ];
+    private static EXPANDABLE_FIELD_TYPES: FieldTypes[] = [FieldTypes.Number, FieldTypes.Text, FieldTypes.DateTime];
 
     /**
      * Maps propertyname to { Lookup list Id, loadLookupController, thisFieldName }
@@ -394,11 +407,11 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     private lookupMappings = new Map<keyof DataType, LookupFieldMapping>();
 
     private static isExpandableField = (field: IFieldInfo) =>
-        allowsMultipleValues(field) || SharePointList.EXPANDABLE_FIELD_TYPES.includes( field.FieldTypeKind );
+        allowsMultipleValues(field) || SharePointList.EXPANDABLE_FIELD_TYPES.includes(field.FieldTypeKind);
 
-    private static isNotExpandable = (lookupController: SharePointList): boolean => 
-        Array.from( lookupController.selectedFields.values() )
-        .some( field => ! SharePointList.isExpandableField( field ) );
+    private static isNotExpandable = (lookupController: SharePointList): boolean =>
+        Array.from(lookupController.selectedFields.values())
+            .some(field => !SharePointList.isExpandableField(field));
 
     /**
      * Change the $select to only include lookup information (ID + (Title or Term)) 
@@ -424,7 +437,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 {
                     previousSelectFields: [...this.selectFields],
                     newSelectFields: [...filteredSelects]
-                }    
+                }
             );
             this.selectFields.clear();
             filteredSelects.forEach(filteredSelect =>
@@ -453,7 +466,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                                     `SharePointList[${this.getName()}].createRequiredChildController no LookupList (ID) for ${property} of type ${info.TypeAsString}[${info.FieldTypeKind}]`
                                 );
                             } else if (!this.lookupMappings.has(property)) {
-                                let lookupController = getById( lookUpListId, false );
+                                let lookupController = getById(lookUpListId, false);
 
                                 if (undefined === lookupController) {
                                     console.log(
@@ -475,13 +488,13 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                                     );
                                 }
 
-                                const isNotExpandable = lookupController.autoLoadPartials || SharePointList.isNotExpandable( lookupController );
+                                const isNotExpandable = lookupController.autoLoadPartials || SharePointList.isNotExpandable(lookupController);
 
                                 console.log(
                                     `SharePointList[${this.getName()}].createRequiredChildController()[${property}] isNotExpandable=${isNotExpandable}`,
                                     { info, lookupController }
                                 );
-                                if(isNotExpandable) {
+                                if (isNotExpandable) {
                                     lookupController.startLoadPartials();
                                     this.changeExpandToLookup(info.InternalName);
                                 }
@@ -496,7 +509,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                         break;
                 }
             } else {
-                throw new Error( `Can only have string members not ${typeof property}` );
+                throw new Error(`Can only have string members not ${typeof property}`);
             }
         }
     };
@@ -513,8 +526,8 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
 
         const lookupFactory = typeData.typeFunction() as ListItemBaseConstructor;
 
-        if ( !lookupController.models.has( lookupFactory ) ) {
-            lookupController.addModel( lookupFactory, "" );
+        if (!lookupController.models.has(lookupFactory)) {
+            lookupController.addModel(lookupFactory, "");
         }
     }
 
@@ -533,8 +546,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             item.setController(this as unknown as SharePointList);
         } else {
             console.error(
-                `SharePointList[${this.getName()
-                }].addGetPartial item has no setController`,
+                `SharePointList[${this.getName()}].addGetPartial item has no setController`,
                 { item, controller: this }
             );
         }
@@ -546,8 +558,11 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         return item;
     }
 
-    public getPartial = (id: number): Partial<DataType> & ListItemBase =>
-        this.records.find(prospect => prospect.id === id) ||
+    public getRecord = (id: number): undefined | DataType =>
+        this.records.find(prospect => prospect.id === id);
+
+    public getPartial = (id: number): undefined | (Partial<DataType> & ListItemBase) =>
+        this.getRecord(id) ||
         this.partialItems.find(prospect => prospect.id === id);
 
     private autoLoadPartials = false;
@@ -570,8 +585,8 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 while (this.partialItems.length) {
                     const partial = this.partialItems[0];
                     const partialAsFull = await this.loadFull(partial);
-                    this.partialItems.splice(0, 1);
-                    this.records.push(partialAsFull);
+                    this.partialItems.splice(0, 1);                    
+                    this.addToRecords(partialAsFull);
                 }
             } finally {
                 this.loadingAndShiftingPartials = false;
@@ -651,7 +666,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                     { error, odataError, errorMatches }
                 );
 
-                if ( odataError?.["odata.error"]?.code === "-1, Microsoft.SharePoint.SPException" &&
+                if (odataError?.["odata.error"]?.code === "-1, Microsoft.SharePoint.SPException" &&
                     errorMatches.length >= 2
                 ) {
                     return errorMatches[1] + "/" + errorMatches[2];
@@ -681,7 +696,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         if (undefined === mapping) {
             throw new Error(`SharePointList[${this.getName()}].handleFailedExpand can't find mapping for expandedField ${fieldName}`);
         } else if (mapping.loadLookupController === true) {
-            console.warn( `SharePointList[${this.getName()}].handleFailedExpand already loading lookup`);
+            console.warn(`SharePointList[${this.getName()}].handleFailedExpand already loading lookup`);
         } else {
             mapping.loadLookupController = true;
             const controller = getById(mapping.listId) as SharePointList;
@@ -698,8 +713,12 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 .get();
 
             for (const plain of plainItems) {
-                const instance = await this.getObject(plain);
-                this.records.push(instance);
+                const existing = this.getRecord(plain.ID);
+                const instance = await this.getObject(plain, existing);
+
+                if (!existing) {
+                    this.addToRecords(instance);
+                }
             }
             console.debug(
                 `SharePointList[${this.getName()}].getAll gotInstances records=${this.records.length}`,
@@ -707,7 +726,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             );
         } catch (getItemsError: unknown) {
             let failedExpandedField = undefined;
-            const status = (getItemsError as Record<string,number>)["status"]
+            const status = (getItemsError as Record<string, number>)["status"]
             switch (status) {
                 case 404:
                     failedExpandedField = TAX_CATCH_ALL_FIELD + "/Title";
@@ -807,23 +826,26 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
      * If filled with values from plain, connectsLookup and fixes single Taxonomy fields.
      * Connect pnpItem, calls instance.init() and removes it from records when deleted
      */
-    private getObject = async ( plain?: Record<string, unknown>, existing?: Partial<DataType> & ListItemBase ): Promise<DataType> => {
+    private getObject = async (plain?: Record<string, unknown>, existing?: Partial<DataType> & ListItemBase): Promise<DataType> => {
         if (plain) {
             resultArrayToArray(plain, this.selectedFields);
         }
         let instance: DataType = undefined;
-        
-        if(plain) {
+        let newInstance: DataType = undefined;
+
+        if (plain) {
             const transformOptions: ClassTransformOptions = { excludeExtraneousValues: true, exposeDefaultValues: true };
             removeNullValues(plain);
 
-            if(existing) {
+            if (existing) {
                 instance = plainToClassFromExist(existing, plain, transformOptions) as DataType;
             } else {
-                instance = plainToClass(this.baseModel.jsFactoryFactory(), plain, transformOptions );
+                newInstance = instance = plainToClass(this.baseModel.jsFactoryFactory(), plain, transformOptions);
             }
+        } else if (existing as DataType) {
+            instance = existing as DataType;
         } else {
-            instance = (existing as DataType) ?? new (this.baseModel.jsFactoryFactory())();
+            newInstance = instance = new (this.baseModel.jsFactoryFactory())();
         }
 
         instance.source = plain;
@@ -832,20 +854,18 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         if (plain) {
             await this.connectLookUp(instance);
             if (instance instanceof ListItem)
-                await fixSingleTaxonomyFields(instance, this.propertyFields);
+                fixSingleTaxonomyFields(instance, this.propertyFields);
         }
         if (instance.setController) {
             instance.setController(this as unknown as SharePointList);
         }
-        if (instance.id) {
-            if (instance.pnpItem) {
-                console.warn( `SharePointList[${this.getName()}].getObject(${instance.id}) instance.pnpItem already set - setting again`);
-            }
+        if (instance.id && ! instance.pnpItem) {
             instance.pnpItem = this.list.items.getById(instance.id);
         }
-        instance.init();
-
-        when(() => instance.deleted).then(() => this.removeItem(instance));
+        if(newInstance) {
+            newInstance.init();
+        }
+        
         return instance;
     };
 
@@ -854,7 +874,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             const tempLookup = item[property] as ListItemBase;
             if (undefined !== tempLookup) {
                 const value = (item.source as DeferredContainer)[mappingInfo.thisFieldName];
-                if ( value && "__deferred" in value && value.__deferred &&
+                if (value && "__deferred" in value && value.__deferred &&
                     "id" in tempLookup && undefined === tempLookup.id
                 ) {
                     console.warn(
@@ -923,10 +943,12 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     };
 
     private removeItem = (item: DataType) => {
-        const index = this.records.findIndex(
-            prospect => prospect.id === item.id
-        );
-        this.records.splice(index, 1);
+        const index = this.records.indexOf( item );
+        if( -1 == index ) {
+            throw new Error(`SharePointList.removeItem( item.id = ${item?.id} ) not found`);
+        } else {
+            this.records.splice(index, 1);
+        }
     };
 }
 
