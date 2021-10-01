@@ -2,9 +2,11 @@ export {
     Controller, Model
 } from './controller/controller';
 export {
-    getLists,
     create,
     getById,
+    getCreateById,
+    getCreateByIdOrTitle,
+    getLists,
     SharePointList
 } from './controller/SharePoint/SharePointList';
 export * from './controller/SharePoint/FieldInfo';

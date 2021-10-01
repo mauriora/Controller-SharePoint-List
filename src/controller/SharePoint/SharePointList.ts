@@ -103,7 +103,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
 
 
     private addToRecords = (item: DataType) => {
-        if(this.records.includes(item) ) {
+        if (this.records.includes(item)) {
             throw new Error(`SharePointList[${this.getName()}].addToRecords(id= ${item?.id}) already includes item`);
         } else if (this.records.some(prospect => item.id === prospect.id)) {
             throw new Error(`SharePointList[${this.getName()}].addToRecords(id= ${item?.id}) different instance with same id already exists`);
@@ -156,7 +156,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             this.allFields
         );
 
-        if (submitRecord.ID && submitRecord.ID > 0 ) {
+        if (submitRecord.ID && submitRecord.ID > 0) {
             const updateResponse = await jsRecord.pnpItem.update(submitRecord);
 
             console.log(`SharePointList[${this.getName()}].submit() update response.data.odata.etag=${updateResponse.data["odata.etag"]}`,
@@ -178,7 +178,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         jsRecord.dirty = false;
     };
 
-    public constructor(public site: SiteInfo, listIdorTitle: string) {
+    protected constructor(public site: SiteInfo, listIdorTitle: string) {
         if (
             /^\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}\}?$/i.test(
                 listIdorTitle
@@ -232,12 +232,20 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     /** SharePoint internalname mapped to fieldInfos */
     public selectedFields = new Map<string, IFieldInfo>();
 
+    public init = async (): Promise<void> => {
+        console.warn(`Call to controller/SharePointList.init() is deprecated. Please remove the call.`);
+    }
+
     /**
      * Gets this.list, fieldInfos, selects all fields, expands all Person/User fields.
      * Call this for controllers interacting with sharepoint.
      * Not needed if this controller is created internally as a lookup controller from expanded fields.
      */
-    public init = async (): Promise<void> => {
+    private initialise = async (): Promise<this> => {
+        if (this.initialised) {
+            throw new Error(`SharePointList[${this.getName()}].init() already done voting=${this.votingExperience}`);
+        }
+
         try {
             if (this.listId) {
                 this.list = this.site.sp.web.lists.getById(this.listId);
@@ -262,7 +270,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
 
         this.initialised = true;
 
-        console.log(`SharePointList[${this.getName()}].init() done voting=${this.votingExperience}`,
+        console.log(`SharePointList[${this.getName()}].init() voting=${this.votingExperience}`,
             {
                 site: this.site,
                 listId: this.listId,
@@ -275,6 +283,8 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 rootFolderProperties: this.rootFolderProperties,
             }
         );
+
+        return this;
     };
 
     private async getFieldInfos() {
@@ -406,12 +416,12 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
      */
     private lookupMappings = new Map<keyof DataType, LookupFieldMapping>();
 
-    private static isExpandableField = (field: IFieldInfo) =>
-        allowsMultipleValues(field) || SharePointList.EXPANDABLE_FIELD_TYPES.includes(field.FieldTypeKind);
+    private static isNotExpandableField = (field: IFieldInfo) =>
+        allowsMultipleValues(field) || (!SharePointList.EXPANDABLE_FIELD_TYPES.includes(field.FieldTypeKind));
 
     private static isNotExpandable = (lookupController: SharePointList): boolean =>
         Array.from(lookupController.selectedFields.values())
-            .some(field => !SharePointList.isExpandableField(field));
+            .some(field => SharePointList.isNotExpandableField(field));
 
     /**
      * Change the $select to only include lookup information (ID + (Title or Term)) 
@@ -432,13 +442,6 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         );
 
         if (removedSomething) {
-            console.log(
-                `SharePointList[${this.getName()}].changeExpandToLookup removed ${this.selectFields.size - filteredSelects.length} because of field ${fieldName}`,
-                {
-                    previousSelectFields: [...this.selectFields],
-                    newSelectFields: [...filteredSelects]
-                }
-            );
             this.selectFields.clear();
             filteredSelects.forEach(filteredSelect =>
                 this.selectFields.add(filteredSelect)
@@ -466,19 +469,8 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                                     `SharePointList[${this.getName()}].createRequiredChildController no LookupList (ID) for ${property} of type ${info.TypeAsString}[${info.FieldTypeKind}]`
                                 );
                             } else if (!this.lookupMappings.has(property)) {
-                                let lookupController = getById(lookUpListId, false);
+                                const lookupController = await getCreateById(lookUpListId, this.site.url);
 
-                                if (undefined === lookupController) {
-                                    console.log(
-                                        `SharePointList[${this.getName()}].createRequiredChildController create LookupList[${lookUpListId}] for ${property}`,
-                                        { info }
-                                    );
-                                    lookupController = await getCreate(
-                                        lookUpListId,
-                                        this.site.url
-                                    );
-                                    lookupController.init();
-                                }
                                 // Add Lookup models of all registered models
                                 for (const model of this.models.values()) {
                                     this.addLookupModeltoController(
@@ -490,10 +482,6 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
 
                                 const isNotExpandable = lookupController.autoLoadPartials || SharePointList.isNotExpandable(lookupController);
 
-                                console.log(
-                                    `SharePointList[${this.getName()}].createRequiredChildController()[${property}] isNotExpandable=${isNotExpandable}`,
-                                    { info, lookupController }
-                                );
                                 if (isNotExpandable) {
                                     lookupController.startLoadPartials();
                                     this.changeExpandToLookup(info.InternalName);
@@ -570,7 +558,6 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     private startLoadPartials = () => {
         if (!this.autoLoadPartials) {
             this.autoLoadPartials = true;
-            this.init();
             this.loadAndShiftPartials();
         }
     };
@@ -585,7 +572,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 while (this.partialItems.length) {
                     const partial = this.partialItems[0];
                     const partialAsFull = await this.loadFull(partial);
-                    this.partialItems.splice(0, 1);                    
+                    this.partialItems.splice(0, 1);
                     this.addToRecords(partialAsFull);
                 }
             } finally {
@@ -688,19 +675,30 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             0,
             expandedField.indexOf("/")
         );
-        this.changeExpandToLookup(fieldName);
-        const [, mapping] = Array.from(this.lookupMappings.entries() ?? []).find(
-            ([, mProspect]) => mProspect.thisFieldName === fieldName
+        // this.changeExpandToLookup(fieldName);
+        const mappingsArray = Array.from(this.lookupMappings.values() ?? []);
+        const mapping = mappingsArray.find(
+            (prospect) => prospect.thisFieldName === fieldName
         );
 
         if (undefined === mapping) {
             throw new Error(`SharePointList[${this.getName()}].handleFailedExpand can't find mapping for expandedField ${fieldName}`);
-        } else if (mapping.loadLookupController === true) {
-            console.warn(`SharePointList[${this.getName()}].handleFailedExpand already loading lookup`);
         } else {
-            mapping.loadLookupController = true;
-            const controller = getById(mapping.listId) as SharePointList;
-            controller.startLoadPartials();
+            if (!mapping.loadLookupController) {
+                const controller = getById(mapping.listId) as SharePointList;
+
+                controller.startLoadPartials();
+            } else {
+                console.warn(`SharePointList[${this.getName()}].handleFailedExpand(${fieldName}) already loaded, ignore this`);
+            }
+
+            const sameControllers = mappingsArray.filter((prospect) => prospect.listId === mapping.listId);
+            console.log(`SharePointList[${this.getName()}].handleFailedExpand(${fieldName}) found ${sameControllers.length} same mappings`);
+
+            for (const sameControllerMapping of sameControllers) {
+                sameControllerMapping.loadLookupController = true;
+                this.changeExpandToLookup(sameControllerMapping.thisFieldName);
+            }
         }
     };
 
@@ -745,7 +743,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                         break;
                     case 400:
                         console.error(
-                            `SharePointList[${this.getName()}].loadAllRecords() failed because of expanding ${failedExpandedField}, this should not happen anymore. Please report and then ignore this error`,
+                            `SharePointList[${this.getName()}].loadAllRecords() failed because of expanding ${failedExpandedField}, this should not happen. Please report and then ignore this error`,
                             {
                                 selectFields: [...this.selectFields],
                                 lookupMappings: this.lookupMappings,
@@ -859,13 +857,13 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         if (instance.setController) {
             instance.setController(this as unknown as SharePointList);
         }
-        if (instance.id && ! instance.pnpItem) {
+        if (instance.id && !instance.pnpItem) {
             instance.pnpItem = this.list.items.getById(instance.id);
         }
-        if(newInstance) {
+        if (newInstance) {
             newInstance.init();
         }
-        
+
         return instance;
     };
 
@@ -943,13 +941,16 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     };
 
     private removeItem = (item: DataType) => {
-        const index = this.records.indexOf( item );
-        if( -1 == index ) {
+        const index = this.records.indexOf(item);
+        if (-1 == index) {
             throw new Error(`SharePointList.removeItem( item.id = ${item?.id} ) not found`);
         } else {
             this.records.splice(index, 1);
         }
     };
+
+    public static create = async (site: SiteInfo, listIdorTitle: string): Promise<SharePointList> =>
+        new SharePointList(site, listIdorTitle).initialise();
 }
 
 /**
@@ -963,15 +964,15 @@ const controllers = new Map<string, SharePointList>();
  * If siteUrl is set, then an isolated context is created for the list.
  * If this function has been called with the same parameters, a warning is shown
  * and the previous created controller is returned.
- * @param listId internal name of the list as in the URL
+ * @param listIdOrTitle internal name of the list as in the URL
  * @param siteUrl optional, specify if accessing a list on a different site than the webpart is running on.
  * @returns instance of the new List Controller
  */
 export const create = async (
-    listId: string,
+    listIdOrTitle: string,
     siteUrl?: string
 ): Promise<SharePointList> => {
-    const url = getListUrl(listId, siteUrl);
+    const url = getListUrl(listIdOrTitle, siteUrl);
 
     const existingController = controllers.get(url) as SharePointList;
 
@@ -987,13 +988,13 @@ export const create = async (
                 : await getSite(normaliseSiteUrl(siteUrl));
         console.log(`SharePointList:create ( ${url} )`, {
             site,
-            listId,
+            listNameOrId: listIdOrTitle,
             siteUrl,
         });
 
-        const newController = new SharePointList(site, listId);
-
+        const newController = await SharePointList.create(site, listIdOrTitle);
         controllers.set(url, newController);
+
         return newController;
     } catch (initError: unknown) {
         throw new Error(
@@ -1055,7 +1056,7 @@ export const getById = (
     return controller;
 };
 
-export const getCreate = async (
+export const getCreateById = async (
     listId: string,
     siteUrl?: string
 ): Promise<SharePointList> => {
@@ -1066,6 +1067,16 @@ export const getCreate = async (
     }
     return controller;
 };
+
+export const getCreateByIdOrTitle = async (listId: string, siteUrl?: string): Promise<SharePointList> => {
+    const url = getListUrl(listId, siteUrl);
+    const existingController = controllers.get(url) as SharePointList;
+
+    if (undefined !== existingController) {
+        return existingController;
+    }
+    return create(listId, siteUrl);
+}
 
 export const getUserLookupSync = (
     userId: number,
