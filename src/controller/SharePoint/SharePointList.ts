@@ -58,10 +58,6 @@ export const getLists = async (siteUrl?: string): Promise<Array<IListInfo>> => {
         site.lists = await site.web.lists.orderBy("Title")();
     }
 
-    console.log(`controller/SharePoint/List:getLists(${siteUrl})`, {
-        lists: site.lists,
-    });
-
     return site.lists;
 };
 
@@ -125,16 +121,6 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             if (!existing) {
                 this.addToRecords(instance);
             }
-            console.debug(`SharePointList[${this.getName()}].gotById(${id}) records=${this.records.length}`,
-                {
-                    instance,
-                    plain,
-                    records: [...this.records],
-                    selects: this.selectFields,
-                    expands: this.expandFields,
-                }
-            );
-
             return instance;
         } catch (getItemsError: unknown) {
             throw new Error(`SharePointList[${this.getName()}].getById(${id}) failed: ${(getItemsError as Error).message ?? getItemsError}`);
@@ -203,15 +189,6 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 },
                 spHttpClient: getDefaultSite().context.spHttpClient,
             } as WebPartContext);
-        console.log(
-            `SharePointList( id=${this.listId}, title=${this.listTitle})`,
-            {
-                site,
-                me: this,
-                context: this.context,
-                defaultContext: getDefaultSite().context,
-            }
-        );
 
         makeAutoObservable(this, {});
     }
@@ -269,20 +246,6 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         await this.addAllSelectAndExpands();
 
         this.initialised = true;
-
-        console.log(`SharePointList[${this.getName()}].init() voting=${this.votingExperience}`,
-            {
-                site: this.site,
-                listId: this.listId,
-                allFields: this.allFields,
-                selectedFields: this.selectedFields,
-                list: this.list,
-                selects: this.selectFields,
-                expands: this.expandFields,
-                me: this,
-                rootFolderProperties: this.rootFolderProperties,
-            }
-        );
 
         return this;
     };
@@ -366,10 +329,6 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             undefined === this.baseModel ||
             this.baseModel.selectFields.length < model.selectFields.length
         ) {
-            console.debug(
-                `SharePointList[${this.getName()}].addModelSelectAndExpand() set baseModel: ${model.jsFactory.name}`,
-                { model, controller: this }
-            );
             this.baseModel = model;
             model.newRecord = this.newRecord = await this.getObject();
         }
@@ -382,8 +341,6 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         filter: string
     ): Promise<SharePointModel<ModelType>> {
         const existing = this.models.get(jsFactory) as unknown as SharePointModel<ModelType>;
-
-        console.debug(`SharePointList[${this.getName()}].addModel()`, { existing });
 
         if (existing) {
             return existing;

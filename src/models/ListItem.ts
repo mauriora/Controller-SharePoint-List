@@ -110,13 +110,10 @@ export class ListItem extends ListItemBase {
 
     @Exclude()
     public myRating = (): number | undefined => {
-        console.log(`ListItem[${this.constructor.name}]#${this.id}@${this.controller?.listInfo?.Title ?? this.controller?.listId}.myRating(${this.controller?.site?.currentUser?.Id})`, {ratings: this.ratings, ratedBy: this.ratedBy});
-
         const myUserId = this.controller.site.currentUser.Id;
         const myRatingIndex = this.ratedBy.findIndex( prospect => myUserId === prospect.id );
         if(0 <= myRatingIndex) {
             const ratingText = this.ratings.split(',')[myRatingIndex];
-            console.log(`ListItem[${this.constructor.name}]#${this.id}@${this.controller?.listInfo?.Title ?? this.controller?.listId}.myRating(${this.controller?.site?.currentUser?.Id}) = ${ratingText}`, {ratings: this.ratings, ratedBy: this.ratedBy});
             return Number(ratingText);
         }
     };
