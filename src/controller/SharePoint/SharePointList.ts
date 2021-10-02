@@ -209,6 +209,9 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     /** SharePoint internalname mapped to fieldInfos */
     public selectedFields = new Map<string, IFieldInfo>();
 
+    /**
+     * @deprecated Please remove the call
+     */
     public init = async (): Promise<void> => {
         console.warn(`Call to controller/SharePointList.init() is deprecated. Please remove the call.`);
     }
