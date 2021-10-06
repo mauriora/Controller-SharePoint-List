@@ -17,6 +17,7 @@ import { UserLookup } from "../../models/User";
 import {
     DeferredContainer,
     fixSingleTaxonomyFields,
+    parseImages,
     removeNullValues,
     resultArrayToArray,
     setNullArrays,
@@ -121,6 +122,10 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             if (!existing) {
                 this.addToRecords(instance);
             }
+            console.debug(
+                `SharePointList[${this.getName()}].getById(${id})`,
+                { plain, existing, instance, me: this }
+            );
             return instance;
         } catch (getItemsError: unknown) {
             throw new Error(`SharePointList[${this.getName()}].getById(${id}) failed: ${(getItemsError as Error).message ?? getItemsError}`);
@@ -249,7 +254,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         await this.addAllSelectAndExpands();
 
         this.initialised = true;
-
+        console.log(`SharePointList[${this.getName()}].init() done voting=${this.votingExperience}`, {me: this});
         return this;
     };
 
@@ -680,7 +685,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             }
             console.debug(
                 `SharePointList[${this.getName()}].getAll gotInstances records=${this.records.length}`,
-                { plainItems, records: [...this.records] }
+                { plainItems, records: [...this.records], me: this }
             );
         } catch (getItemsError: unknown) {
             let failedExpandedField = undefined;
@@ -781,7 +786,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
      * @param existing instance to fill and initialise
      * @returns the existing instance or a new object created from plain or the factory.
      * Checks that arrays are created.
-     * If filled with values from plain, connectsLookup and fixes single Taxonomy fields.
+     * If filled with values from plain then removeNullValues, parseImages, connectsLookup and fixes single Taxonomy fields.
      * Connect pnpItem, calls instance.init() and removes it from records when deleted
      */
     private getObject = async (plain?: Record<string, unknown>, existing?: Partial<DataType> & ListItemBase): Promise<DataType> => {
@@ -794,7 +799,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         if (plain) {
             const transformOptions: ClassTransformOptions = { excludeExtraneousValues: true, exposeDefaultValues: true };
             removeNullValues(plain);
-
+            parseImages(plain, this.selectedFields);
             if (existing) {
                 instance = plainToClassFromExist(existing, plain, transformOptions) as DataType;
             } else {

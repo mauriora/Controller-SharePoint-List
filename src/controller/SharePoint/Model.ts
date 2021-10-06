@@ -82,7 +82,7 @@ export class SharePointModel<DataType extends ListItemBase = ListItemBase> imple
     }
 
     private static IGNORED_SUB_EXPANDS = ['Author', 'Editor', 'Attachments', 'AverageRating', 'RatingCount', 'Ratings', 'LikesCount', 'TaxKeyword', 'TaxCatchAll', 'RatedBy', 'LikedBy'];
-    private static OPTIONAL_FIELDS = ['TaxKeyword', 'TaxCatchAll', 'AverageRating', 'RatingCount', 'RatedBy', 'Ratings', 'LikesCount', 'LikedBy'];
+    private static OPTIONAL_FIELDS = ['Attachments', 'TaxKeyword', 'TaxCatchAll', 'AverageRating', 'RatingCount', 'RatedBy', 'Ratings', 'LikesCount', 'LikedBy'];
 
     /**
      * Adds the fieldName to expandedFields and adds each expansion as fieldName/expansion to selectFields

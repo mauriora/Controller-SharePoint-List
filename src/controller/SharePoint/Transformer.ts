@@ -7,6 +7,11 @@ import { MetaTerm, MetaTermSP } from "../../models/MetaTerm";
 import { addTerm } from "../Taxonomy";
 import { allowsMultipleValues, getTermSetId, isKeyword } from "./FieldInfo";
 
+enum NewFieldTypes {
+    Image = 34
+}
+export type AllFieldTypes = FieldTypes | NewFieldTypes;
+
 export interface ResultsArray {
     [key: string]: { results?: [] } | [];
 }
@@ -25,6 +30,33 @@ export const removeNullValues = (item: Record<string, null | unknown>): Record<s
         }
     }
     return item;
+}
+
+/**
+ * Parses the JSON string returned for image fields.
+ * @param item the plain item returned from pnp.list.items.get
+ * @param selectedFields fieldnames mapped to fieldinfo to determine Iamge fields
+ * @return the plain object with all Image fields string value replaced by the parsed object
+ */
+export const parseImages = (plain: Record<string, string | unknown>, selectedFields: Map<string, IFieldInfo>): Record<string, unknown> => {
+    for( const [fieldName, info] of selectedFields.entries()) {
+        if( NewFieldTypes.Image === (info.FieldTypeKind as unknown as NewFieldTypes)) {
+            const fieldValue = plain[fieldName];
+            if(fieldValue) {
+                if('string' === typeof fieldValue) {
+                    console.debug(`Transformer:parseImages() found image field ${fieldName}`, {fieldValue, plainNow: {...plain}, plain});
+                    const imageObject = JSON.parse(fieldValue);
+                    plain[fieldName] = imageObject;
+                    console.debug(`Transformer:parseImages() parsed image field ${fieldName}`, {fieldValue, imageObject, plainNow: {...plain}, plain});
+                } else {
+                    console.error(`Transformer:parseImages() found image field ${fieldName} of type '${typeof fieldValue}' should be 'string'`, {fieldValue, plainNow: {...plain}, plain});
+                }
+            } else {
+                console.debug(`Transformer:parseImages() found empty image field ${fieldName}`, {plainNow: {...plain}, plain});
+            }
+        }
+    }
+    return plain;
 }
 
 export const resultArrayToArray = (plain: ResultsArray, selectedFields: Map<string, IFieldInfo>): void => {

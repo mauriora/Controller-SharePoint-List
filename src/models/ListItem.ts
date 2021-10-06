@@ -70,6 +70,9 @@ export class ListItem extends ListItemBase {
     @Expose({ name: 'LikedBy', toClassOnly: true })
     public likedBy: Array<UserLookup> = new Array<UserLookup>();
 
+    @Expose({ name: 'EncodedAbsUrl'})
+    encodedAbsUrl: string = undefined;
+
     @Exclude()
     public isLikedByMe = (): boolean => this.likedBy.some(
         prospect => this.controller.site.currentUser.Id === prospect.id

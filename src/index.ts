@@ -23,7 +23,9 @@ export {
     personaProps2User
 } from './controller/SharePoint/UserTools';
 export { addTerm, getTerm } from './controller/Taxonomy';
+export { DataBase, DataBaseConstructor } from './models/DataBase'
 export { ListItemBase, ListItemBaseConstructor } from './models/ListItemBase';
+export { Image, ThumbnailRenderer } from './models/Image';
 export { UserFull, IUserFull, UserLookup, IUserLookup } from './models/User';
 export { ListItem, ListItemConstructor } from './models/ListItem';
 export { Announcement } from './models/Announcement';
