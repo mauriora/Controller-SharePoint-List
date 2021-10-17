@@ -24,6 +24,8 @@
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
+    "@mauriora/eslint-config-ts": "*",
+    "@mauriora/package-tools": "*",
     "@microsoft/microsoft-graph-types": "^2.6.0",
     "@microsoft/sp-build-web": "^1.12.1",
     "@microsoft/sp-extension-base": "^1.12.1",
