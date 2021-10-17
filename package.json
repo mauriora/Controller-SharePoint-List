@@ -14,37 +14,26 @@
     "clean": "tsc --build --clean"
   },
   "dependencies": {
-    "@microsoft/sp-lodash-subset": "^1.12.1",
+    "@microsoft/sp-http": "^1.12.1",
     "@pnp/graph": "2.9.0",
     "@pnp/sp": "2.9.0",
     "class-transformer": "^0.4.0",
-    "lodash": "^4.17.21",
     "mobx": "^6.1.8",
-    "moment": "^2.29.1",
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
     "@mauriora/eslint-config-ts": "*",
     "@mauriora/package-tools": "*",
     "@microsoft/microsoft-graph-types": "^2.6.0",
-    "@microsoft/sp-build-web": "^1.12.1",
     "@microsoft/sp-extension-base": "^1.12.1",
-    "@microsoft/sp-module-interfaces": "^1.12.1",
-    "@microsoft/sp-odata-types": "^1.12.1",
-    "@microsoft/sp-tslint-rules": "^1.12.1",
     "@microsoft/sp-webpart-base": "^1.12.1",
     "@pnp/spfx-controls-react": "3.3.0",
-    "@types/chai": "3.4.34",
-    "@types/es6-promise": "0.0.33",
-    "@types/mocha": "2.2.38",
     "@types/webpack-env": "1.13.1",
     "@typescript-eslint/eslint-plugin": "^4.31.0",
     "@typescript-eslint/parser": "^4.31.0",
     "@typescript-eslint/typescript-estree": "^4.31.0",
-    "ajv": "~5.2.2",
     "eslint": "^7.32.0"
   },
   "peerDependencies": {
-    "@microsoft/sp-core-library": "^1.12.1"
   }
 }
