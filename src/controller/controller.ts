@@ -1,5 +1,4 @@
-import { ExtensionContext } from "@microsoft/sp-extension-base";
-import { WebPartContext } from "@microsoft/sp-webpart-base";
+import { BaseComponentContext } from "@microsoft/sp-component-base";
 import { DataBase, DataBaseConstructor } from "../models/DataBase";
 
 export interface Controller<ControllerType extends DataBase, DataType extends ControllerType> {
@@ -10,7 +9,7 @@ export interface Controller<ControllerType extends DataBase, DataType extends Co
     records: Array<DataType>;
     loadAllRecords: (filter: string) => Promise<void>;
 
-    context: WebPartContext | ExtensionContext;
+    context: BaseComponentContext;
 
     submit: (newRecord: DataType) => Promise<void>;
     getByIdSync: (id: number) => DataType | undefined;

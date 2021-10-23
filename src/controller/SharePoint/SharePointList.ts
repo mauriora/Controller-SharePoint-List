@@ -28,8 +28,7 @@ import { ODataError } from "../../models/OData/Error";
 import { DataError } from "../../models/DataError";
 import { allowsMultipleValues, getLookupList } from "./FieldInfo";
 import { ListItem } from "../..";
-import { WebPartContext } from "@microsoft/sp-webpart-base";
-import { ExtensionContext } from "@microsoft/sp-extension-base";
+import { BaseComponentContext } from "@microsoft/sp-component-base";
 
 const TAX_CATCH_ALL_FIELD = "TaxCatchAll";
 
@@ -87,7 +86,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     public votingExperience: undefined | "Ratings" | "Likes";
 
     public rootFolderProperties: Record<string, string | number>;
-    public context: WebPartContext | ExtensionContext;
+    public context: BaseComponentContext;
     public initialised: boolean;
 
     /** If newRecord is submitted, then it will be replaced with a new instance. */
@@ -193,7 +192,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                     },
                 },
                 spHttpClient: getDefaultSite().context.spHttpClient,
-            } as WebPartContext);
+            } as BaseComponentContext);
 
         makeAutoObservable(this, {});
     }
