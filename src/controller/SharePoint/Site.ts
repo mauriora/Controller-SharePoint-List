@@ -3,8 +3,7 @@ import { SPRest, sp } from "@pnp/sp";
 import { IListInfo } from "@pnp/sp/lists";
 import { ISiteUserInfo } from "@pnp/sp/site-users/types";
 import { IWeb, IWebInfo, Web } from "@pnp/sp/webs";
-import { ExtensionContext } from '@microsoft/sp-extension-base';
-import { WebPartContext } from '@microsoft/sp-webpart-base';
+import { BaseComponentContext } from "@microsoft/sp-component-base";
 
 export interface SiteInfo {
     web?: IWeb;
@@ -14,7 +13,7 @@ export interface SiteInfo {
 
     info: IWebInfo;
     url: string;
-    context?: WebPartContext | ExtensionContext;
+    context?: BaseComponentContext;
     lists?: Array<IListInfo>;
 
     isDefault: boolean;
@@ -114,7 +113,7 @@ export const getCurrentUser = (siteUrl: string): ISiteUserInfo => getSiteSync(si
  * 
  * @param defaultContext this.context of the WebPart or Extension
  */
- export const init = async (defaultContext: WebPartContext | ExtensionContext): Promise<void> => {
+ export const init = async (defaultContext: BaseComponentContext): Promise<void> => {
     if (sites.has('')) {
         console.warn(`SharePoint/Site:init(): default context already set to ${getDefaultSite().url}, re-setting to ${defaultContext.pageContext?.web?.absoluteUrl}`);
     }

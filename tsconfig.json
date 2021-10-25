@@ -1,35 +1,13 @@
 {
+  "extends": "@mauriora/package-tools/includes/tsconfig.json",
   "compilerOptions": {
-    "target": "ES2019",
-    "forceConsistentCasingInFileNames": true,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "jsx": "react",
-    "strict": true,
-    "declaration": true,
-    "sourceMap": true,
-    "experimentalDecorators": true,
-    "skipLibCheck": true,
     "outDir": "dist",
-    "inlineSources": false,
-    "strictNullChecks": false,
-    "noUnusedLocals": false,
-    "downlevelIteration": true,
-    "types": [
-      "es6-promise",
-      "webpack-env"
-    ],
-    "lib": [
-      "es2019",
-      "dom"
-    ],
+    "rootDir": "./src",
+    "typeRoots": [
+      "./node_modules/@types", "./node_modules/@microsoft"      
+    ]
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules",
-    "lib"
+    "src/**/*.ts"
   ]
 }
