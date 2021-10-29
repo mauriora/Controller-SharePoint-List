@@ -1,10 +1,13 @@
 {
   "name": "@mauriora/controller-sharepoint-list",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": false,
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "engines": {
     "node": ">=14.16.0"
   },
@@ -34,6 +37,5 @@
     "@typescript-eslint/typescript-estree": "^4.31.0",
     "eslint": "^7.32.0"
   },
-  "peerDependencies": {
-  }
+  "peerDependencies": {}
 }
