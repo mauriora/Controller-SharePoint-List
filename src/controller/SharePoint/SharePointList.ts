@@ -253,7 +253,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         await this.addAllSelectAndExpands();
 
         this.initialised = true;
-        console.log(`SharePointList[${this.getName()}].init() done voting=${this.votingExperience}`, {me: this});
+        console.log(`SharePointList[${this.getName()}].init() done voting=${this.votingExperience}`, { me: this });
         return this;
     };
 
@@ -276,6 +276,12 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     private getListInfo = async () => {
         try {
             this.listInfo = await this.list();
+            if (!this.listId) {
+                this.listId = this.listInfo.Id;
+            }
+            if (!this.listTitle) {
+                this.listTitle = this.listInfo.Title;
+            }
         } catch (getListInfoError: unknown) {
             throw new Error(
                 `SharePointList[${this.getName()}].getListInfo(): getList ${(getListInfoError as Error).message ?? getListInfoError}`

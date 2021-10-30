@@ -102,7 +102,7 @@ export class ListItem extends ListItemBase {
             );
 
             this.likedBy.push( me );
-            this.likesCount += 1;
+            this.likesCount = (this.likesCount ?? 0) + 1;
         }
     }
 
@@ -131,8 +131,8 @@ export class ListItem extends ListItemBase {
             );
 
             this.ratedBy.push( me );
-            this.ratingCount += 1;
-            this.ratings += `${rating},`;
+            this.ratingCount = (this.ratingCount ?? 0) + 1;
+            this.ratings = (this.ratings ?? '') + `${rating},`;
         } else {
             const ratings = this.ratings.split(',');
             const myUserId = this.controller.site.currentUser.Id;
