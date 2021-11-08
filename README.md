@@ -12,21 +12,23 @@ Not quite public yet, this is part of the [hybrid repro MVC SharePoint example i
 
 This shows how get items from the Announcements List.
 
-1. create a SharePoint List controller using `getCreateByIdOrTitle`
-2. get the SharePoint model using `newController.addModel( ModelClass, filterQuery );`
-3. if no records have been loaded, call `newModel.loadAllRecords()`
-
 ```typescript
+    /** import the model */
     import { AnnouncementExtended } from '@mauriora/model-announcement-extended';
+
+    /** import the controller factory */
     import { getCreateByIdOrTitle } from '@mauriora/controller-sharepoint-list';
 
     const newController = await getCreateByIdOrTitle(listName, siteUrl);
+
     const now: string = new Date().toISOString();
+    /** get the SharePoint model */
     const newModel = await newController.addModel(
         AnnouncementExtended,
         `(StartDate le datetime'${now}' or StartDate eq null) and (Expires ge datetime'${now}' or Expires eq null)`
     );
-    if(0 === newModel.records.length ) 
+    /** newModel.records is an Array of AnnouncementExtended */
+    if(0 === newModel.records.length )
     {
         await newModel.loadAllRecords();
     }
