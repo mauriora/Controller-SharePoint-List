@@ -18,8 +18,8 @@
   },
   "dependencies": {
     "@microsoft/sp-http": "1.12.1",
-    "@pnp/graph": "2.9.0",
-    "@pnp/sp": "2.9.0",
+    "@pnp/graph": "2.13.0",
+    "@pnp/sp": "2.13.0",
     "class-transformer": "^0.4.0",
     "mobx": "^6.6.0",
     "reflect-metadata": "^0.1.13"
