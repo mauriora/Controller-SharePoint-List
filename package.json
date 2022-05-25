@@ -21,7 +21,7 @@
     "@pnp/graph": "2.9.0",
     "@pnp/sp": "2.9.0",
     "class-transformer": "^0.4.0",
-    "mobx": "^6.1.8",
+    "mobx": "^6.6.0",
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
@@ -31,10 +31,10 @@
     "@microsoft/sp-component-base": "1.12.1",
     "@pnp/spfx-controls-react": "3.3.0",
     "@types/es6-promise": "^3.3.0",
-    "@types/webpack-env": "1.13.1",
-    "@typescript-eslint/eslint-plugin": "^4.31.0",
-    "@typescript-eslint/parser": "^4.31.0",
-    "@typescript-eslint/typescript-estree": "^4.31.0",
+    "@types/webpack-env": "1.17.0",
+    "@typescript-eslint/eslint-plugin": "^4.33.0",
+    "@typescript-eslint/parser": "^4.33.0",
+    "@typescript-eslint/typescript-estree": "^4.33.0",
     "eslint": "^7.32.0",
     "typescript": "4.2.4"
   }
