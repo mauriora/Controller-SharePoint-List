@@ -29,7 +29,7 @@
     "@mauriora/package-tools": "^0.0.10",
     "@microsoft/microsoft-graph-types": "^2.20.0",
     "@microsoft/sp-component-base": "1.14.0",
-    "@pnp/spfx-controls-react": "3.3.0",
+    "@pnp/spfx-controls-react": "3.8.0",
     "@types/es6-promise": "^3.3.0",
     "@types/webpack-env": "1.17.0",
     "@typescript-eslint/eslint-plugin": "^4.33.0",
