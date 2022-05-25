@@ -17,7 +17,7 @@
     "clean": "tsc --build --clean"
   },
   "dependencies": {
-    "@microsoft/sp-http": "1.12.1",
+    "@microsoft/sp-http": "1.14.0",
     "@pnp/graph": "2.13.0",
     "@pnp/sp": "2.13.0",
     "class-transformer": "^0.4.0",
@@ -28,7 +28,7 @@
     "@mauriora/eslint-config-ts": "0.0.1",
     "@mauriora/package-tools": "^0.0.10",
     "@microsoft/microsoft-graph-types": "^2.20.0",
-    "@microsoft/sp-component-base": "1.12.1",
+    "@microsoft/sp-component-base": "1.14.0",
     "@pnp/spfx-controls-react": "3.3.0",
     "@types/es6-promise": "^3.3.0",
     "@types/webpack-env": "1.17.0",
