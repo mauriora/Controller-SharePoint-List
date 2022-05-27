@@ -10,6 +10,7 @@ import { MetaTerm } from './MetaTerm';
 import { getUserLookupSync } from '../controller/SharePoint/SharePointList';
 import { TaxCatchAll } from './TaxCatchAll';
 import { setRating } from '../controller/Rating';
+import "@pnp/sp/comments/item";
 
 
 export class ListItem extends ListItemBase {
@@ -140,7 +141,7 @@ export class ListItem extends ListItemBase {
             ratings[myRatingIndex] = rating.toFixed();
             this.ratings = ratings.join(',');
         }
-        const newRating = await this.pnpItem.select('AverageRating').get();
+        const newRating = await this.pnpItem.select('AverageRating')();
         console.log(`ListItem[${this.constructor.name}]#${this.id}@${this.controller?.listInfo?.Title ?? this.controller?.listId}.setRating(${rating}) ${this.averageRating} => ${newRating.AverageRating}`, newRating);
 
         this.averageRating = newRating.AverageRating;

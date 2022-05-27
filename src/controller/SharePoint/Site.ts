@@ -1,13 +1,15 @@
-import { graph } from "@pnp/graph";
-import { SPRest, sp } from "@pnp/sp";
+import { spfi, SPFI, SPFx } from "@pnp/sp";
+import { LogLevel, PnPLogging } from "@pnp/logging";
 import { IListInfo } from "@pnp/sp/lists";
 import { ISiteUserInfo } from "@pnp/sp/site-users/types";
-import { IWeb, IWebInfo, Web } from "@pnp/sp/webs";
+import { IWeb, IWebInfo } from "@pnp/sp/webs";
 import { BaseComponentContext } from "@microsoft/sp-component-base";
+import "@pnp/sp/webs";
+import "@pnp/sp/site-users/web";
 
 export interface SiteInfo {
     web?: IWeb;
-    sp?: SPRest;
+    sp?: SPFI;
 
     currentUser: ISiteUserInfo;
 
@@ -25,43 +27,45 @@ export interface SiteInfo {
  * '' maps to the default sp instance,
  * any other Url maps to an isolated instance.
  */
- const sites = new Map<string, SiteInfo>();
+const sites = new Map<string, SiteInfo>();
 
 export const getDefaultSite = (): SiteInfo => {
-     const defaultSite = sites.get('');
- 
-     if (undefined === defaultSite) {
-         throw new Error(`Default Site has not been set, in your WebPart.onInit call 'init( this.context )'`);
-     }
-     return defaultSite;
- };
- 
- /**
- * Remove trailing space from siteUrl
- */
+    const defaultSite = sites.get('');
+
+    if (undefined === defaultSite) {
+        throw new Error(`Default Site has not been set, in your WebPart.onInit call 'init( this.context )'`);
+    }
+    return defaultSite;
+};
+
+/**
+* Remove trailing space from siteUrl
+*/
 export const normaliseSiteUrl = (siteUrl: string): string => siteUrl.replace(/\/$/, '');
 
-const createIsolatedSpRest = async (siteUrl: string): Promise<SPRest> => {
+const createIsolatedSpRest = async (siteUrl: string): Promise<SPFI> => {
     const normalisedSiteUrl = normaliseSiteUrl(siteUrl);
     console.debug(`createIsolatedSpRest(${normalisedSiteUrl})`);
 
     try {
-        const isolatedSp = await sp.createIsolated({
-            baseUrl: normalisedSiteUrl
-        });
+        const defaultSite = getDefaultSite();
 
-        isolatedSp.setup({
-            sp: {
-                baseUrl: normalisedSiteUrl,
-                headers: {
-                    // --> Causes { __deferred: } for empty arrays:
-                    // "Accept": "application/json;odata=verbose;charset=utf-8"
-                    "Accept": "application/json;charset=utf-8"
-                }
-            }
-        });
+        const isolatedSp = spfi(normalisedSiteUrl).using(SPFx(defaultSite.context)).using(PnPLogging(LogLevel.Warning));
+        // const isolatedSpOLD = await sp.createIsolated({
+        //     baseUrl: normalisedSiteUrl
+        // });
+        // isolatedSp.setup({
+        //     sp: {
+        //         baseUrl: normalisedSiteUrl,
+        //         headers: {
+        //             // --> Causes { __deferred: } for empty arrays:
+        //             // "Accept": "application/json;odata=verbose;charset=utf-8"
+        //             "Accept": "application/json;charset=utf-8"
+        //         }
+        //     }
+        // });
         return isolatedSp;
-    } catch( createSpRestError: unknown ) {
+    } catch (createSpRestError: unknown) {
         throw new Error(`controller/createIsolatedSpRest: problem creating isolated SPRest for ${siteUrl}=>${normalisedSiteUrl}: [${(createSpRestError as Record<string, string>)?.status}] ${(createSpRestError as Error)?.message ?? createSpRestError}`);
     }
 }
@@ -71,20 +75,25 @@ const createIsolatedSpRest = async (siteUrl: string): Promise<SPRest> => {
  * @param siteUrl 
  * @returns a SiteInfo with at least url, web, sp
  */
- export const getSite = async (siteUrl: string): Promise<SiteInfo> => {
+export const getSite = async (siteUrl: string): Promise<SiteInfo> => {
     const normalisedSiteUrl = normaliseSiteUrl(siteUrl);
 
     let site: SiteInfo = sites.get(normalisedSiteUrl);
 
     if (undefined === site) {
-        const web = Web(normalisedSiteUrl);
+        const isolatedSP = await createIsolatedSpRest(siteUrl);
+
+        const web = isolatedSP.web;
+        const webInfo = await web();
+        const currentUser = await web.currentUser()
+
         site = {
             url: siteUrl,
             web,
-            info: await web(),
+            info: webInfo,
             isDefault: false,
-            sp: await createIsolatedSpRest(siteUrl),
-            currentUser: await web.currentUser.get(),
+            sp: isolatedSP,
+            currentUser: currentUser,
         };
 
         sites.set(normalisedSiteUrl, site);
@@ -113,29 +122,31 @@ export const getCurrentUser = (siteUrl: string): ISiteUserInfo => getSiteSync(si
  * 
  * @param defaultContext this.context of the WebPart or Extension
  */
- export const init = async (defaultContext: BaseComponentContext): Promise<void> => {
+export const init = async (defaultContext: BaseComponentContext): Promise<void> => {
     if (sites.has('')) {
         console.warn(`SharePoint/Site:init(): default context already set to ${getDefaultSite().url}, re-setting to ${defaultContext.pageContext?.web?.absoluteUrl}`);
     }
-    sp.setup(defaultContext);
 
-    const web = Web(defaultContext.pageContext.web.absoluteUrl);
+    const sp = spfi().using(SPFx(defaultContext)).using(PnPLogging(LogLevel.Warning));
+
+    //const web = Web(defaultContext.pageContext.web.absoluteUrl);
+    const web = sp.web;
+
+    const webInfo = await web();
+
+    const currentUser = await web.currentUser()
 
     const defaultSiteInfo: SiteInfo = {
         url: defaultContext.pageContext?.web?.absoluteUrl,
         web,
-        info: await web(),
+        info: webInfo,
         context: defaultContext,
         isDefault: true,
-        currentUser: await web.currentUser.get(),
+        currentUser: currentUser,
         sp
     };
 
     sites.set('', defaultSiteInfo);
 
-    graph.setup({
-        spfxContext: defaultContext
-    });
-
-    console.log(`SharePoint/Site:init( ${defaultContext.pageContext?.web?.absoluteUrl} ) `, { defaultContext, defaultSiteInfo, currentUser: defaultSiteInfo.currentUser, sp, graph });
+    console.log(`SharePoint/Site:init( ${defaultContext.pageContext?.web?.absoluteUrl} ) `, { defaultContext, defaultSiteInfo, currentUser: defaultSiteInfo.currentUser, sp });
 };

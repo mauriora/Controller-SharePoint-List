@@ -1,6 +1,6 @@
 {
   "name": "@mauriora/controller-sharepoint-list",
-  "version": "0.1.10",
+  "version": "0.2.1",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,8 +18,9 @@
   },
   "dependencies": {
     "@microsoft/sp-http": "1.14.0",
-    "@pnp/graph": "2.13.0",
-    "@pnp/sp": "2.13.0",
+    "@pnp/graph": "3.3.2",
+    "@pnp/logging": "^3.3.2",
+    "@pnp/sp": "3.3.2",
     "class-transformer": "^0.4.0",
     "mobx": "^6.6.0",
     "reflect-metadata": "^0.1.13"
