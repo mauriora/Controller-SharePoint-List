@@ -2,8 +2,11 @@
 
 Provides access to SharePoint lists. It defines the base models wich can be used to extend from.
 
-This is part of the [hybrid repro MVC SharePoint example implementation](https://github.com/mauriora/reusable-hybrid-repo-mvc-spfx-examples)
+> This is part of the [hybrid repro MVC SharePoint example implementation](https://github.com/mauriora/reusable-hybrid-repo-mvc-spfx-examples)
 
+## Table of content
+
+- [Table of content](#table-of-content)
 - [Getting Started](#getting-started)
 - [Examples](#examples)
   - [Model definition](#model-definition)
