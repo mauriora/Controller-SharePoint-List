@@ -23,7 +23,7 @@ const is403Error = (err: unknown | Error403): err is Error403 =>
     typeof (err as Error403).statusText === 'string' &&
     typeof (err as Error403).message === 'string';
 
-export class ErrorWithInner<InnerType extends unknown = unknown> extends Error {
+export class ErrorWithInner<InnerType = unknown> extends Error {
     constructor(message?: string, public inner?: InnerType) {
         super(message);
     }

@@ -233,7 +233,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
      * Call this for controllers interacting with sharepoint.
      * Not needed if this controller is created internally as a lookup controller from expanded fields.
      */
-    private initialise = async (): Promise<this> => {
+    private initialise = async (): Promise<SharePointList<DataType>> => {
         if (this.initialised) {
             throw new Error(`SharePointList[${this.getName()}].initialise() already done voting=${this.votingExperience}`);
         }
