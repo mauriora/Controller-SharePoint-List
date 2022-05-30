@@ -167,6 +167,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             this.addToRecords(jsRecord);
 
             if (this.newRecord === jsRecord) {
+                this.newRecord = await this.getObject();
                 for (const model of this.models.values()) {
                     model.newRecord = this.newRecord;
                 }
