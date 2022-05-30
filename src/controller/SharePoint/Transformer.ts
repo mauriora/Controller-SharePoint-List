@@ -191,8 +191,8 @@ export const toSubmit = async (jsRecord: ListItemBase, selectedFields: Map<strin
         const propertyValue = submitRecord[propertyName];
         const fieldInfo = selectedFields.get(propertyName);
 
-        if (undefined === fieldInfo) {
-            if (['Attachments', 'TaxKeyword', 'TaxCatchAll'].findIndex(optional => optional === propertyName) >= 0) {
+        if (undefined === fieldInfo || ['TaxCatchAll'].includes(propertyName)) {
+            if (['Attachments', 'TaxKeyword', 'TaxCatchAll'].includes(propertyName)) {
                 console.warn(`[${jsRecord.id}].toSubmit() delete field ${propertyName}`, { jsRecord, submitRecord });
                 delete submitRecord[propertyName];
             } else {
