@@ -1,6 +1,6 @@
 import { FieldTypes, IFieldInfo } from "@pnp/sp/fields";
 import { EmptyGuid } from '@pnp/spfx-controls-react';
-import { classToPlain } from "class-transformer";
+import { instanceToPlain } from "class-transformer";
 import { ListItem } from "../../models/ListItem";
 import { ListItemBase } from "../../models/ListItemBase";
 import { MetaTerm, MetaTermSP } from "../../models/MetaTerm";
@@ -18,7 +18,7 @@ export interface ResultsArray {
 
 /**
  * Deletes all properties with a value null.
- * Used as preparation for plainToClass when retrieving SharePoint items.
+ * Used as preparation for plainToInstance when retrieving SharePoint items.
  * This ensures that the target class default values are used, e.g. an empty array and not set values are actually undefined.
  * @param item, e.g. {a: 1, b: [], c: null}
  * @returns the item without properties that were null, e.g.: {a: 1, b:[]}
@@ -185,7 +185,7 @@ const toTaxonomyFieldType = (submitRecord: TaxonomySubmitRecord, propertyName: s
 }
 
 export const toSubmit = async (jsRecord: ListItemBase, selectedFields: Map<string, IFieldInfo>, allFields: Map<string, IFieldInfo>): Promise<Record<string, unknown>> => {
-    const submitRecord = classToPlain(jsRecord, { excludeExtraneousValues: true });
+    const submitRecord = instanceToPlain(jsRecord, { excludeExtraneousValues: true });
 
     for (const propertyName in submitRecord) {
         const propertyValue = submitRecord[propertyName];

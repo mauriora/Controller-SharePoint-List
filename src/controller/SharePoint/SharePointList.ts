@@ -30,7 +30,7 @@ import {
     setNullArrays,
     toSubmit,
 } from "./Transformer";
-import { ClassTransformOptions, plainToClass, plainToClassFromExist } from "class-transformer";
+import { ClassTransformOptions, plainToInstance, plainToClassFromExist } from "class-transformer";
 import { ODataError } from "../../models/OData/Error";
 import { DataError } from "../../models/DataError";
 import { allowsMultipleValues, getLookupList } from "./FieldInfo";
@@ -816,7 +816,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             if (existing) {
                 instance = plainToClassFromExist(existing, plain, transformOptions) as DataType;
             } else {
-                newInstance = instance = plainToClass(this.baseModel.jsFactoryFactory(), plain, transformOptions);
+                newInstance = instance = plainToInstance(this.baseModel.jsFactoryFactory(), plain, transformOptions);
             }
         } else if (existing as DataType) {
             instance = existing as DataType;

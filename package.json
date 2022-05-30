@@ -1,6 +1,6 @@
 {
   "name": "@mauriora/controller-sharepoint-list",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,13 +21,13 @@
     "@pnp/graph": "3.3.2",
     "@pnp/logging": "^3.3.2",
     "@pnp/sp": "3.3.2",
-    "class-transformer": "^0.4.0",
+    "class-transformer": "^0.5.1",
     "mobx": "^6.6.0",
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
     "@mauriora/eslint-config-ts": "0.0.1",
-    "@mauriora/package-tools": "^0.1.0",
+    "@mauriora/package-tools": "^0.1.1",
     "@microsoft/microsoft-graph-types": "^2.20.0",
     "@microsoft/sp-component-base": "1.14.0",
     "@pnp/spfx-controls-react": "3.8.0",
