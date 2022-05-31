@@ -194,6 +194,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             ? site.context
             : ({
                 pageContext: {
+                    cultureInfo: getDefaultSite().context.pageContext.cultureInfo,
                     web: {
                         absoluteUrl: site.url,
                         language:
