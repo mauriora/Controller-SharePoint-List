@@ -20,7 +20,7 @@
     "@microsoft/sp-http": "1.14.0",
     "@pnp/graph": "3.3.2",
     "@pnp/logging": "^3.3.2",
-    "@pnp/sp": "3.3.2",
+    "@pnp/sp": "3.3.2-v3nightly.20220601",
     "class-transformer": "^0.5.1",
     "mobx": "^6.6.0",
     "reflect-metadata": "^0.1.13"
