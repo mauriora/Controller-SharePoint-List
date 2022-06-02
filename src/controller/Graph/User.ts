@@ -1,6 +1,8 @@
-import { graph } from "@pnp/graph";
+import { graphfi, GraphFI, SPFx } from "@pnp/graph";
+import { LogLevel, PnPLogging } from "@pnp/logging";
 import "@pnp/graph/users";
 import { User } from '@microsoft/microsoft-graph-types';
+import { getDefaultSite } from "../SharePoint/Site";
 export { User } from '@microsoft/microsoft-graph-types';
 
 const USER_FIELDS = ['businessPhones', 'displayName', 'jobTitle', 'mobilePhone'];
@@ -21,11 +23,21 @@ const is403Error = (err: unknown | Error403): err is Error403 =>
     typeof (err as Error403).statusText === 'string' &&
     typeof (err as Error403).message === 'string';
 
-export class ErrorWithInner<InnerType extends unknown = unknown> extends Error {
+export class ErrorWithInner<InnerType = unknown> extends Error {
     constructor(message?: string, public inner?: InnerType) {
         super(message);
     }
 }
+
+let graph: GraphFI = undefined;
+
+const getGraph = () => {
+    if (undefined === graph) {
+        const sp = getDefaultSite();
+        graph = graphfi().using(SPFx(sp.context)).using(PnPLogging(LogLevel.Warning));
+    }
+    return graph;
+};
 
 export const getUser = async (emailOrId: string, selects?: string[]): Promise<User | void> => {
     const existing = cache.get(emailOrId);
@@ -33,7 +45,7 @@ export const getUser = async (emailOrId: string, selects?: string[]): Promise<Us
         return existing;
     }
     try {
-        const matchingUser = await graph.users.getById(emailOrId).select(...(selects ?? USER_FIELDS))();
+        const matchingUser = await getGraph().users.getById(emailOrId).select(...(selects ?? USER_FIELDS))();
 
         if (matchingUser) {
             cache.set(emailOrId, matchingUser);
@@ -56,3 +68,4 @@ export const getUser = async (emailOrId: string, selects?: string[]): Promise<Us
         throw newError;
     }
 }
+

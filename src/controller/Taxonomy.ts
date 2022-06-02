@@ -1,6 +1,5 @@
-import { SPRest } from "@pnp/sp";
 import "@pnp/sp/taxonomy";
-import { ITermInfo, ITermSet } from "@pnp/sp/taxonomy";
+import { ITermInfo, ITermSet, ITermStore } from "@pnp/sp/taxonomy";
 import { MetaTermSP } from "../models/MetaTerm";
 import { getGraphFactory } from "./SharePoint/Graph";
 
@@ -10,8 +9,7 @@ const setsCache = new Map<string, ITermSet>();
 const GRAPH_BETA_URL = 'https://graph.microsoft.com/beta';
 const getCreateTermGraphUrl = (setId: string) => `${GRAPH_BETA_URL}/termStore/sets/${setId}/children`;
 
-const getTermset = async (sp: SPRest, groupGuid: string, setGuid: string) => {
-    const store = sp.termStore;
+const getTermset = async (store: ITermStore, groupGuid: string, setGuid: string) => {
     let termSet = setsCache.get(setGuid);
     if (!termSet) {
         if (groupGuid) {
@@ -69,17 +67,17 @@ export const addTerm = async (setGuid: string, term: MetaTermSP): Promise<MetaTe
     return term;
 }
 
-export const getTerm = async (sp: SPRest, groupGuid: string, setGuid: string, termGuid: string): Promise<ITermInfo> => {
+export const getTerm = async (termStore: ITermStore, groupGuid: string, setGuid: string, termGuid: string): Promise<ITermInfo> => {
     if (undefined === termGuid)
-        throw new Error(`getTerm(sp: ${sp}, groupGuid: ${groupGuid}, setGuid: ${setGuid}, termGuid: ${termGuid}) require termGuid`);
+        throw new Error(`getTerm(termStore: ${termStore}, groupGuid: ${groupGuid}, setGuid: ${setGuid}, termGuid: ${termGuid}) require termGuid`);
 
     console.time(`getTerm(${termGuid})`);
 
     let term: ITermInfo = termCache.get(termGuid);
 
     if (undefined === term) {
-        const termSet = await getTermset(sp, groupGuid, setGuid);
-        term = await termSet.getTermById(termGuid).get();
+        const termSet = await getTermset(termStore, groupGuid, setGuid);
+        term = await termSet.getTermById(termGuid)();
     }
     console.timeEnd(`getTerm(${termGuid})`);
     console.log(`getTerm(${termGuid})`, { term });

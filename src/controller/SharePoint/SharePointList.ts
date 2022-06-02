@@ -1,10 +1,17 @@
+import "@pnp/sp/webs";
+import "@pnp/sp/lists";
+import "@pnp/sp/lists/web";
+import "@pnp/sp/fields";
+import "@pnp/sp/folders/list";
+import "@pnp/sp/items";
 // causes webpack to fail -> import { defaultMetadataStorage } from 'class-transformer/types/storage';
 // declared in ./MetadataStorage.d.ts
 import { defaultMetadataStorage } from "class-transformer/esm5/storage";
 
 // import { FieldTypes, IFieldInfo } from "@pnp/sp/fields";
-// import { IList, IListInfo } from "@pnp/sp/lists";
-import { IFieldInfo, IList, IListInfo, FieldTypes } from "@pnp/sp/presets/all";
+import { IList, IListInfo } from "@pnp/sp/lists";
+import { IFieldInfo, FieldTypes } from "@pnp/sp/fields/types";
+// import { IFieldInfo, IList, IListInfo, FieldTypes } from "@pnp/sp/presets/all"; // Upgrade to above PNP3
 import {
     ListItemBase,
     ListItemBaseConstructor,
@@ -23,7 +30,7 @@ import {
     setNullArrays,
     toSubmit,
 } from "./Transformer";
-import { ClassTransformOptions, plainToClass, plainToClassFromExist } from "class-transformer";
+import { ClassTransformOptions, plainToInstance, plainToClassFromExist } from "class-transformer";
 import { ODataError } from "../../models/OData/Error";
 import { DataError } from "../../models/DataError";
 import { allowsMultipleValues, getLookupList } from "./FieldInfo";
@@ -149,7 +156,8 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         if (submitRecord.ID && submitRecord.ID > 0) {
             const updateResponse = await jsRecord.pnpItem.update(submitRecord);
 
-            console.log(`SharePointList[${this.getName()}].submit() update response.data.odata.etag=${updateResponse.data["odata.etag"]}`,
+            // PRE UPGRADE console.log(`SharePointList[${this.getName()}].submit() update response.data.odata.etag=${updateResponse.data["odata.etag"]}`,
+            console.log(`SharePointList[${this.getName()}].submit() update response.data.etag=${updateResponse.data.etag}`,
                 { jsRecord, submitRecord, updateResponse }
             );
         } else {
@@ -159,6 +167,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             this.addToRecords(jsRecord);
 
             if (this.newRecord === jsRecord) {
+                this.newRecord = await this.getObject();
                 for (const model of this.models.values()) {
                     model.newRecord = this.newRecord;
                 }
@@ -185,6 +194,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             ? site.context
             : ({
                 pageContext: {
+                    cultureInfo: getDefaultSite().context.pageContext.cultureInfo,
                     web: {
                         absoluteUrl: site.url,
                         language:
@@ -225,9 +235,9 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
      * Call this for controllers interacting with sharepoint.
      * Not needed if this controller is created internally as a lookup controller from expanded fields.
      */
-    private initialise = async (): Promise<this> => {
+    private initialise = async (): Promise<SharePointList<DataType>> => {
         if (this.initialised) {
-            throw new Error(`SharePointList[${this.getName()}].init() already done voting=${this.votingExperience}`);
+            throw new Error(`SharePointList[${this.getName()}].initialise() already done voting=${this.votingExperience}`);
         }
 
         try {
@@ -239,7 +249,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         } catch (getListError: unknown) {
             throw new Error(
                 `SharePointList[${this.getName()
-                }].init(): ${this.listId ? "getById" : "getByTitle"}: ${(getListError as Error).message ?? getListError
+                }].initialise(): ${this.listId ? "getById" : "getByTitle"}: ${(getListError as Error).message ?? getListError
                 }`
             );
         }
@@ -253,7 +263,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
         await this.addAllSelectAndExpands();
 
         this.initialised = true;
-        console.log(`SharePointList[${this.getName()}].init() done voting=${this.votingExperience}`, { me: this });
+        console.log(`SharePointList[${this.getName()}].initialise() done voting=${this.votingExperience}`, { me: this });
         return this;
     };
 
@@ -295,7 +305,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
     private getRootFolderProperties = async () => {
         try {
             this.rootFolderProperties =
-                await this.list.rootFolder.properties.get();
+                await this.list.rootFolder.properties();
             this.votingExperience = this.rootFolderProperties["Ratings_x005f_VotingExperience"] as undefined | "Ratings" | "Likes";
         } catch (getError: unknown) {
             throw new Error(
@@ -678,7 +688,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 .filter(filter)
                 .select(...this.selectFields)
                 .expand(...this.expandFields)
-                .get();
+                ();
 
             for (const plain of plainItems) {
                 const existing = this.getRecord(plain.ID);
@@ -775,7 +785,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
                 .select(...this.selectFields)
                 .expand(...this.expandFields)
                 .filter(`ID eq ${id}`)
-                .get()
+                ()
         )[0];
 
     /**
@@ -808,7 +818,7 @@ export class SharePointList<DataType extends ListItemBase = ListItemBase>
             if (existing) {
                 instance = plainToClassFromExist(existing, plain, transformOptions) as DataType;
             } else {
-                newInstance = instance = plainToClass(this.baseModel.jsFactoryFactory(), plain, transformOptions);
+                newInstance = instance = plainToInstance(this.baseModel.jsFactoryFactory(), plain, transformOptions);
             }
         } else if (existing as DataType) {
             instance = existing as DataType;

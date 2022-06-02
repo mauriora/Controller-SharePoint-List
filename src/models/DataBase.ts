@@ -31,12 +31,8 @@ export class DataBase implements IDataBase {
     [key: string]: unknown;
     /** Don't allow number indexing as array */
     [key: number]: never;
-
-    // /** Don't allow symbols indexing as array */
-    //TODO Test with TypeScript 4.4 and higher
-    // Causes: error TS1023: An index signature parameter type must be either 'string' or 'number'.
-    //TODO Would this work with mobx?
-    // [key: symbol]: never;
+    /** Don't allow symbols indexing as array */
+    [key: symbol]: never;
 
     /** Source object this has been created from */
     @Exclude()
