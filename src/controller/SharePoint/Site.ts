@@ -51,19 +51,7 @@ const createIsolatedSpRest = async (siteUrl: string): Promise<SPFI> => {
         const defaultSite = getDefaultSite();
 
         const isolatedSp = spfi(normalisedSiteUrl).using(SPFx(defaultSite.context)).using(PnPLogging(LogLevel.Warning));
-        // const isolatedSpOLD = await sp.createIsolated({
-        //     baseUrl: normalisedSiteUrl
-        // });
-        // isolatedSp.setup({
-        //     sp: {
-        //         baseUrl: normalisedSiteUrl,
-        //         headers: {
-        //             // --> Causes { __deferred: } for empty arrays:
-        //             // "Accept": "application/json;odata=verbose;charset=utf-8"
-        //             "Accept": "application/json;charset=utf-8"
-        //         }
-        //     }
-        // });
+
         return isolatedSp;
     } catch (createSpRestError: unknown) {
         throw new Error(`controller/createIsolatedSpRest: problem creating isolated SPRest for ${siteUrl}=>${normalisedSiteUrl}: [${(createSpRestError as Record<string, string>)?.status}] ${(createSpRestError as Error)?.message ?? createSpRestError}`);
