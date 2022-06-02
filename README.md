@@ -1,6 +1,6 @@
 # Controller SharePoint list
 
-Provides access to SharePoint lists. It defines the base models wich can be used to extend from.
+Provides access to SharePoint lists. It defines the base models which can be used to extend from.
 
 > This is part of the [hybrid repro MVC SharePoint example implementation](https://github.com/mauriora/reusable-hybrid-repo-mvc-spfx-examples)
 
@@ -19,12 +19,16 @@ Provides access to SharePoint lists. It defines the base models wich can be used
 
 Import this module in your project, extend a model for your list and start using it with the controller.
 
+```shell
+yarn add @mauriora/controller-sharepoint-list class-transformer reflect-metadata`
+```
+
 package.son:
 
 ```json
 {
   "dependencies": {
-    "@mauriora/controller-sharepoint-list": "^0.2.1",
+    "@mauriora/controller-sharepoint-list": "^0.2.6",
     "class-transformer": "^0.4.0",
     "reflect-metadata": "^0.1.13"
   }
@@ -36,7 +40,7 @@ package.son:
 ### Model definition
 
 Usually you would extend your model from `ListItem`. Unless a builtin model like `Announcement` exists.
-Each sharepoint field is mapped to a property using the `@Expose` decorator. If the field is an object like a lookup, then it needs a `@Type` decoarator. `@Exclude()` is used for properties that should be exclude from the transfer with SharePoint.
+Each sharepoint field is mapped to a property using the `@Expose` decorator. If the field is an object like a lookup, then it needs a `@Type` decorator. `@Exclude()` is used for properties that should be exclude from the transfer with SharePoint.
 
 This extends the built in announcements model:
 
@@ -92,7 +96,7 @@ export class Announcement extends ListItem {
 
 The base model is inherited by all models. Some models extend from `DataBase` while user of this library would usually extend from `ListItem`.
 
-The builtin base models look like follows. **The `@Exclude()` decorators have been ommited to shorten the code block**!
+The builtin base models look like follows. **The `@Exclude()` decorators have been omitted to shorten the code block**!
 
 ```typescript
 export class DataBase {
@@ -107,7 +111,7 @@ export class DataBase {
      * Don't call init() from inside a constructor !
      * @returns this
      */
-    public init(options?: InitOpions): this {...}
+    public init(options?: InitOptions): this {...}
 }
 
 export abstract class Deleteable extends DataBase implements IDeleteable {
@@ -129,7 +133,7 @@ export class ListItemBase extends Deleteable {
         super();
     }
 
-    public init(options?: InitOpions): this {
+    public init(options?: InitOptions): this {
         ...
         return super.init(options);
     }
@@ -159,7 +163,7 @@ export class ListItem extends ListItemBase {
         super();
     }
 
-    public init(options?: InitOpions): this {
+    public init(options?: InitOptions): this {
         return super.init(options);
     }
 
