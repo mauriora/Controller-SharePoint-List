@@ -1,6 +1,10 @@
 {
   "name": "@mauriora/controller-sharepoint-list",
   "version": "0.2.6",
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/mauriora/Controller-SharePoint-List.git"
+  },
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
