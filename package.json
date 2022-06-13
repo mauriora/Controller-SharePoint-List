@@ -22,15 +22,6 @@
         "release": "yarn run dotenv yarn run semantic-release --dry-run",
         "semantic-release": "semantic-release"
     },
-    "release": {
-        "branches": [
-            "main",
-            {
-                "name": "build-n-publish", 
-                "prerelease": "true"
-            }
-        ]
-    },
     "dependencies": {
         "@microsoft/sp-http": "1.14.0",
         "@pnp/graph": "3.4.0",
