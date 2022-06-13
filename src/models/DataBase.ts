@@ -7,7 +7,7 @@ import {
     observe,
 } from "mobx";
 
-export interface InitOpions {
+export interface InitOptions {
     nonObservableProperties?: Array<string>;
 }
 
@@ -16,7 +16,7 @@ export interface IDataBase {
      * @example const myData = new MyData(); myData.init();
      * @example const myData = new MyData().init();
      */
-    init: (options?: InitOpions) => this;
+    init: (options?: InitOptions) => this;
 
     source: unknown;
 
@@ -43,8 +43,8 @@ export class DataBase implements IDataBase {
     public dirty = false;
 
     protected static initOptions(
-        options?: InitOpions
-    ): InitOpions & Required<InitOpions> {
+        options?: InitOptions
+    ): InitOptions & Required<InitOptions> {
         options = options ?? {};
         const fullOptions = {
             ...options,
@@ -67,19 +67,19 @@ export class DataBase implements IDataBase {
     };
 
     @Exclude()
-    private initalised = false;
+    private initialized = false;
     /**
      * Makes this instance observable. Needs to be called after all constructors are finished.
      * Don't call init() from inside a constructor !
      * @returns this
      */
-    public init(options?: InitOpions): this {
-        if (this.initalised) {
+    public init(options?: InitOptions): this {
+        if (this.initialized) {
             console.error(
                 `DataBase[${this.constructor.name}].init already initialised`
             );
         } else {
-            this.initalised = true;
+            this.initialized = true;
             options = DataBase.initOptions(options);
             options.nonObservableProperties.push("source");
 

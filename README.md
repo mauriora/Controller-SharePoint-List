@@ -114,7 +114,7 @@ export class DataBase {
     public init(options?: InitOptions): this {...}
 }
 
-export abstract class Deleteable extends DataBase implements IDeleteable {
+export abstract class Deletable extends DataBase implements IDeletable {
 
     public constructor() {
         super();
@@ -127,7 +127,7 @@ export abstract class Deleteable extends DataBase implements IDeleteable {
     abstract deleted: boolean;
 }
 
-export class ListItemBase extends Deleteable {
+export class ListItemBase extends Deletable {
 
     public constructor() {
         super();

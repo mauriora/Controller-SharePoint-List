@@ -4,8 +4,8 @@ import {
     Expose
 } from 'class-transformer';
 import { IItem } from '@pnp/sp/items';
-import { Deleteable } from './Deleteable';
-import { DataBase, InitOpions } from './DataBase';
+import { Deletable } from './Deletable';
+import { DataBase, InitOptions } from './DataBase';
 import { SharePointList } from '../controller/SharePoint/SharePointList';
 
 
@@ -14,15 +14,15 @@ import { SharePointList } from '../controller/SharePoint/SharePointList';
 // odata.id: "533f110d-57d6-478b-8194-7a3e57ee1503"
 // odata.type: "SP.Data.Test1ListItem"
 /**
- * Minimal SharePoint ListItem inteface, extended to contain author & editor
+ * Minimal SharePoint ListItem interface, extended to contain author & editor
  */
-export class ListItemBase extends Deleteable {
+export class ListItemBase extends Deletable {
 
     public constructor() {
         super();
     }
 
-    public init(options?: InitOpions): this {
+    public init(options?: InitOptions): this {
         options = DataBase.initOptions(options);
         options.nonObservableProperties.push('pnpItem')
         return super.init(options);

@@ -5,7 +5,7 @@ import {
 } from 'class-transformer';
 import { UserLookup } from "./User";
 import { ListItemBase } from './ListItemBase';
-import { InitOpions } from './DataBase';
+import { InitOptions } from './DataBase';
 import { MetaTerm } from './MetaTerm';
 import { getUserLookupSync } from '../controller/SharePoint/SharePointList';
 import { TaxCatchAll } from './TaxCatchAll';
@@ -19,7 +19,7 @@ export class ListItem extends ListItemBase {
         super();
     }
 
-    public init(options?: InitOpions): this {
+    public init(options?: InitOptions): this {
         return super.init(options);
     }
 
